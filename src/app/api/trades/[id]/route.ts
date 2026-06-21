@@ -12,11 +12,15 @@ async function verifyOwner(tradeId: string, userEmail: string) {
   return trade;
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const existing = await verifyOwner(params.id, session.user.email);
+  const existing = await verifyOwner(id, session.user.email);
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -51,17 +55,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const updated = await prisma.trade.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       symbol: body.symbol?.toUpperCase() ?? existing.symbol,
-      direction,
-      entryPrice,
+      direction, entryPrice,
       exitPrice: exitPrice ?? null,
       stopLoss: stopLoss ?? null,
       takeProfit: body.takeProfit ? parseFloat(body.takeProfit) : existing.takeProfit,
       lotSize: body.lotSize ? parseFloat(body.lotSize) : existing.lotSize,
-      entryDate,
-      exitDate,
+      entryDate, exitDate,
       commission: body.commission !== undefined ? parseFloat(body.commission) : existing.commission,
       swap: body.swap !== undefined ? parseFloat(body.swap) : existing.swap,
       pnl: body.pnl ? parseFloat(body.pnl) : existing.pnl,
@@ -86,18 +88,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: { currentBalance: { increment: delta } },
     });
   }
-
   return NextResponse.json(updated);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const trade = await verifyOwner(params.id, session.user.email);
+  const trade = await verifyOwner(id, session.user.email);
   if (!trade) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.trade.delete({ where: { id: params.id } });
+  await prisma.trade.delete({ where: { id } });
 
   if (trade.pnl && trade.status === "closed") {
     await prisma.tradingAccount.update({
@@ -105,6 +110,5 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       data: { currentBalance: { decrement: trade.pnl } },
     });
   }
-
   return NextResponse.json({ success: true });
 }

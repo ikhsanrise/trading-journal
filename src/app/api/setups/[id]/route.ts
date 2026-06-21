@@ -5,19 +5,20 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const setup = await prisma.setup.findFirst({ where: { id: context.params.id, userId: user.id } });
+  const setup = await prisma.setup.findFirst({ where: { id, userId: user.id } });
   if (!setup) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
   const updated = await prisma.setup.update({
-    where: { id: context.params.id },
+    where: { id },
     data: {
       name: body.name ?? setup.name,
       description: body.description ?? setup.description,
@@ -32,17 +33,18 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const setup = await prisma.setup.findFirst({ where: { id: context.params.id, userId: user.id } });
+  const setup = await prisma.setup.findFirst({ where: { id, userId: user.id } });
   if (!setup) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await prisma.trade.updateMany({ where: { setupId: context.params.id }, data: { setupId: null } });
-  await prisma.setup.delete({ where: { id: context.params.id } });
+  await prisma.trade.updateMany({ where: { setupId: id }, data: { setupId: null } });
+  await prisma.setup.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

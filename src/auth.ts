@@ -9,7 +9,7 @@ export const authOptions = {
   pages: { signIn: "/login" },
   callbacks: {
     jwt({ token, user }: any) {
-      if (user) { token.id = user.id; }
+      if (user) { token.id = user.id; token.email = user.email; token.name = user.name; }
       return token;
     },
     session({ session, token }: any) {
@@ -25,11 +25,18 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials: any) {
-        if (!credentials?.email) return null;
+        if (!credentials?.email || !credentials?.password) return null;
+        
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
+        
         if (!user) return null;
+        
+        // Simple password check - compare plain text
+        // For production security, use bcrypt
+        if (user.password !== credentials.password) return null;
+        
         return { id: user.id, email: user.email, name: user.name };
       },
     }),

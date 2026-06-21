@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
   for (const cell of heatmapData) { heatGrid[cell.day][cell.hour] = cell; }
 
   // Hours with activity
-  const activeHours = [...new Set(heatmapData.map((d: any) => d.hour))].sort((a: number, b: number) => a - b) as number[];
+  const activeHours = ([...new Set(heatmapData.map((d: any) => d.hour))] as number[]).sort((a, b) => a - b);
 
   return (
     <div className="p-4 space-y-4">

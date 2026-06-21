@@ -1,0 +1,119 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  tradingAccounts TradingAccount[]
+  setups   Setup[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TradingAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String
+  broker         String
+  currency       String   @default("USD")
+  initialBalance Float
+  currentBalance Float
+  assetClass     String   @default("forex") // forex | commodity | stock | crypto
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades Trade[]
+}
+
+model Trade {
+  id               String    @id @default(cuid())
+  accountId        String
+  symbol           String
+  direction        String    // long | short
+  entryPrice       Float
+  exitPrice        Float?
+  stopLoss         Float?
+  takeProfit       Float?
+  lotSize          Float
+  entryDate        DateTime
+  exitDate         DateTime?
+  commission       Float     @default(0)
+  swap             Float     @default(0)
+  pnl              Float?
+  rMultiple        Float?
+  status           String    @default("open") // open | closed | breakeven
+  outcome          String?   // win | loss | breakeven
+  setupId          String?
+  session          String?   // london | newyork | asia | sydney
+  timeframe        String?
+  notes            String?   @db.Text
+  mood             Int?      // 1-5
+  screenshotBefore String?
+  screenshotAfter  String?
+  setupCategory    String?   // A | A+ | A++ | B
+  tags             String[]  @default([])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  setup   Setup?         @relation(fields: [setupId], references: [id])
+}
+
+model Setup {
+  id          String  @id @default(cuid())
+  userId      String
+  name        String
+  description String? @db.Text
+  rules       String? @db.Text
+  timeframe   String?
+  expectedRR  Float?
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades Trade[]
+}

@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 96.1%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 213 74% 39%;
+    --primary: 213 74% 39%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+  }
+  .dark {
+    --background: 222 47% 9%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    --border: 217 32% 20%;
+    --input: 217 32% 17%;
+    --ring: 213 74% 55%;
+    --primary: 213 74% 55%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+  }
+  * { border-color: hsl(var(--border)); }
+  body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); }
+}
+
+@layer components {
+  .pnl-win {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 500;
+    background: #EAF3DE; color: #27500A;
+    border: 0.5px solid #97C459;
+  }
+  .pnl-loss {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 500;
+    background: #FCEBEB; color: #791F1F;
+    border: 0.5px solid #F09595;
+  }
+  .pnl-be {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 500;
+    background: #FAEEDA; color: #633806;
+    border: 0.5px solid #EF9F27;
+  }
+  .dark .pnl-win { background: #27500A; color: #C0DD97; border-color: #3B6D11; }
+  .dark .pnl-loss { background: #791F1F; color: #F7C1C1; border-color: #A32D2D; }
+  .dark .pnl-be { background: #633806; color: #FAC775; border-color: #BA7517; }
+  .dark input, .dark select, .dark textarea {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+  }
+  .dark input::placeholder, .dark textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+/* Dark mode form fixes */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(var(--muted-foreground));
+}

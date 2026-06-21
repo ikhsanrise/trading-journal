@@ -93,7 +93,7 @@ export default function TradeFormModal({ trade, onClose, onSaved }: Props) {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const payload = { ...form, tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean) };
+    const payload = { ...form, tags: form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) };
     const isEdit = !!trade;
     const res = await fetch(isEdit ? `/api/trades/${trade.id}` : "/api/trades", {
       method: isEdit ? "PATCH" : "POST",

@@ -7,6 +7,7 @@ export const authOptions = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" as const },
   pages: { signIn: "/login" },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     jwt({ token, user }: any) {
       if (user) { token.id = user.id; token.email = user.email; token.name = user.name; }
@@ -25,13 +26,25 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials: any) {
-        if (!credentials?.email || !credentials?.password) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-        if (!user) return null;
-        if (user.password !== credentials.password) return null;
-        return { id: user.id, email: user.email, name: user.name };
+        try {
+          if (!credentials?.email || !credentials?.password) return null;
+          
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
+          
+          if (!user) return null;
+          if (!user.password) return null;
+          
+          // Direct string comparison
+          const match = user.password === credentials.password;
+          if (!match) return null;
+          
+          return { id: user.id, email: user.email, name: user.name };
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
       },
     }),
   ],

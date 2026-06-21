@@ -26,17 +26,11 @@ export const authOptions = {
       },
       async authorize(credentials: any) {
         if (!credentials?.email || !credentials?.password) return null;
-        
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
-        
         if (!user) return null;
-        
-        // Simple password check - compare plain text
-        // For production security, use bcrypt
         if (user.password !== credentials.password) return null;
-        
         return { id: user.id, email: user.email, name: user.name };
       },
     }),

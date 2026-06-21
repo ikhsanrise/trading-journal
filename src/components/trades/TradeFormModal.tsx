@@ -30,7 +30,7 @@ export default function TradeFormModal({ trade, onClose, onSaved }: Props) {
   const toDateStr = (d: any) => d ? new Date(d).toISOString().split("T")[0] : "";
   const toTimeStr = (d: any) => d ? new Date(d).toTimeString().slice(0, 5) : "";
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<string, any>>({
     accountId: trade?.accountId ?? "",
     symbol: trade?.symbol ?? "",
     direction: trade?.direction ?? "long",

@@ -32,13 +32,9 @@ export async function GET(req: NextRequest) {
   if (!targetAccount) return NextResponse.json({ accounts, stats: null, equityCurve: [], bySymbol: [], bySession: [], calendar: [], recentTrades: [] });
 
   const trades = await prisma.trade.findMany({
-    where: {
-      accountId: targetAccount.id,
-      OR: [
-        { entryDate: { gte: dateFrom, lte: now } },
-        { exitDate: { gte: dateFrom, lte: now } },
-      ],
-    },
+  where: {
+    accountId: targetAccount.id,
+  },
     include: { account: true, setup: true },
     orderBy: { entryDate: "asc" },
   });
@@ -48,7 +44,9 @@ export async function GET(req: NextRequest) {
     orderBy: { entryDate: "asc" },
   });
 
-  const closedTrades = trades.filter((t) => t.status === "closed");
+  const closedTrades = trades.filter((t) => 
+  t.status === "closed" || t.status === "CLOSED"
+  );
   const netPnL = closedTrades.reduce((s, t) => s + (t.pnl ?? 0), 0);
 
   const equityMap = new Map<string, number>();

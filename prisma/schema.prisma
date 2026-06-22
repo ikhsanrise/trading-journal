@@ -1,28 +1,26 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts Account[]
-  sessions Session[]
+  id              String           @id @default(cuid())
+  name            String?
+  email           String           @unique
+  emailVerified   DateTime?
+  image           String?
+  password        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  setups          Setup[]
   tradingAccounts TradingAccount[]
-  setups   Setup[]
 }
 
 model Account {
@@ -31,15 +29,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -60,20 +57,19 @@ model TradingAccount {
   currency       String   @default("USD")
   initialBalance Float
   currentBalance Float
-  assetClass     String   @default("forex") // forex | commodity | stock | crypto
+  assetClass     String   @default("forex")
   isDefault      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades Trade[]
+  trades         Trade[]
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Trade {
-  id               String    @id @default(cuid())
+  id               String         @id @default(cuid())
   accountId        String
   symbol           String
-  direction        String    // long | short
+  direction        String
   entryPrice       Float
   exitPrice        Float?
   stopLoss         Float?
@@ -81,40 +77,38 @@ model Trade {
   lotSize          Float
   entryDate        DateTime
   exitDate         DateTime?
-  commission       Float     @default(0)
-  swap             Float     @default(0)
+  commission       Float          @default(0)
+  swap             Float          @default(0)
   pnl              Float?
   rMultiple        Float?
-  status           String    @default("open") // open | closed | breakeven
-  outcome          String?   // win | loss | breakeven
+  status           String         @default("open")
+  outcome          String?
   setupId          String?
-  session          String?   // london | newyork | asia | sydney
+  session          String?
   timeframe        String?
-  notes            String?   @db.Text
-  mood             Int?      // 1-5
+  notes            String?
+  mood             Int?
   screenshotBefore String?
   screenshotAfter  String?
-  setupCategory    String?   // A | A+ | A++ | B
-  tags             String[]  @default([])
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  setup   Setup?         @relation(fields: [setupId], references: [id])
+  tags             String[]       @default([])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  setupCategory    String?
+  account          TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  setup            Setup?         @relation(fields: [setupId], references: [id])
 }
 
 model Setup {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
   name        String
-  description String? @db.Text
-  rules       String? @db.Text
+  description String?
+  rules       String?
   timeframe   String?
   expectedRR  Float?
   tags        String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades Trade[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades      Trade[]
 }

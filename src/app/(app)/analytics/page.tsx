@@ -130,6 +130,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold">Analytics</span>
+        <AccountSwitcher value={accountId} onChange={setAccountId} />
+      </div>
       <div className="flex items-center justify-between">
         <h1 className="text-sm font-semibold">Analytics</h1>
         <span className="text-xs text-muted-foreground">{data.totalTrades} total trades</span>

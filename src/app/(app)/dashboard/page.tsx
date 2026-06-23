@@ -270,7 +270,7 @@ export default function DashboardPage() {
               {accountOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
-                  <div className="absolute left-0 top-8 z-50 min-w-[180px] bg-card border rounded-xl shadow-xl py-1 overflow-hidden">
+                  <div className="absolute left-0 top-8 z-50 min-w-[180px] border rounded-xl shadow-xl py-1 overflow-hidden" style={{ backgroundColor: "hsl(var(--card))" }}>
                     {data.accounts.map((acc: any) => (
                       <button
                         key={acc.id}

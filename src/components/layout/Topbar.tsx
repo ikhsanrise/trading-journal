@@ -30,7 +30,7 @@ export default function Topbar({ user }: TopbarProps) {
           {open && (
             <>
               <div className="fixed inset-0" onClick={() => setOpen(false)} />
-              <div className="absolute right-0 top-8 w-44 bg-card border rounded-lg shadow-md py-1 z-50">
+              <div className="absolute right-0 top-8 w-44 border rounded-lg shadow-xl py-1 z-50" style={{ backgroundColor: "hsl(var(--card))" }}>
                 <div className="px-3 py-2 border-b">
                   <p className="text-xs font-medium truncate">{user?.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>

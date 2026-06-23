@@ -13,7 +13,11 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const accounts = await prisma.tradingAccount.findMany({ where: { userId: user.id } });
-  const accountIds = accounts.map((a) => a.id);
+  const { searchParams } = new URL(req.url);
+  const accountIdParam = searchParams.get("accountId");
+  const accountIds = accountIdParam
+    ? [accountIdParam]
+    : accounts.map((a) => a.id);
 
   const trades = await prisma.trade.findMany({
     where: { accountId: { in: accountIds }, status: "closed" },

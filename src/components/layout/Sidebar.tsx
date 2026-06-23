@@ -2,13 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  TrendingUp,
-  LayoutDashboard,
-  ListOrdered,
-  BarChart3,
-  CalendarDays,
-  BookOpen,
-  Settings,
+  TrendingUp, LayoutDashboard, ListOrdered, BarChart3,
+  CalendarDays, BookOpen, Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +30,7 @@ export default function Sidebar() {
             const active = pathname.startsWith(href);
             return (
               <Link key={href} href={href}>
-                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer", "text-muted-foreground hover:bg-secondary hover:text-foreground", active && "bg-indigo-50 dark:bg-indigo-950 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950")} title={label}>
+                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground", active && "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")} title={label}>
                   <Icon className="w-[18px] h-[18px]" />
                 </div>
               </Link>
@@ -43,24 +38,32 @@ export default function Sidebar() {
           })}
         </nav>
         <Link href="/settings">
-          <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer", "text-muted-foreground hover:bg-secondary hover:text-foreground", pathname.startsWith("/settings") && "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")} title="Settings">
+          <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground", pathname.startsWith("/settings") && "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")} title="Settings">
             <Settings className="w-[18px] h-[18px]" />
           </div>
         </Link>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border flex items-center justify-around px-1 py-2" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
+      {/* Mobile Bottom Navigation - solid background with inline style */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-1"
+        style={{
+          backgroundColor: 'hsl(var(--card))',
+          borderTop: '1px solid hsl(var(--border))',
+          paddingTop: '8px',
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+        }}
+      >
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname.startsWith(href);
           return (
-            <Link key={href} href={href} className={cn("flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1", active ? "text-indigo-600" : "text-muted-foreground")}>
+            <Link key={href} href={href} className={cn("flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1", active ? "text-indigo-500" : "text-muted-foreground")}>
               <Icon className="w-5 h-5 shrink-0" />
               <span className="text-[9px] font-medium truncate">{label}</span>
             </Link>
           );
         })}
-        <Link href="/settings" className={cn("flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1", pathname.startsWith("/settings") ? "text-indigo-600" : "text-muted-foreground")}>
+        <Link href="/settings" className={cn("flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1", pathname.startsWith("/settings") ? "text-indigo-500" : "text-muted-foreground")}>
           <Settings className="w-5 h-5 shrink-0" />
           <span className="text-[9px] font-medium">Settings</span>
         </Link>

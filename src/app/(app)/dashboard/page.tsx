@@ -52,13 +52,13 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
   const startDow = getDay(start);
 
   function summarizeWeek(wdays: any[]) {
-    let pnl = 0, tradeDays = 0;
+    let pnl = 0, tradeDays = 0, tradeCount = 0;
     for (const d of wdays) {
       if (!d) continue;
       const entry = dataMap.get(format(d, "yyyy-MM-dd"));
-      if (entry) { pnl += entry.pnl; tradeDays++; }
+      if (entry) { pnl += entry.pnl; tradeDays++; tradeCount += entry.tradeCount; }
     }
-    return { pnl, tradeDays };
+    return { pnl, tradeDays, tradeCount };
   }
 
   const weeks: (Date | null)[][] = [];
@@ -123,7 +123,7 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
 
       {/* Weeks */}
       {weeks.map((wk, wi) => {
-        const { pnl: wPnl, tradeDays: wDays } = summarizeWeek(wk);
+        const { pnl: wPnl, tradeDays: wDays, tradeCount: wTrades } = summarizeWeek(wk);
         const wColors = wDays > 0 ? getCellColors(wPnl) : null;
         return (
           <div key={wi} className="grid grid-cols-8 gap-1 mb-1">
@@ -149,7 +149,7 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
                         {fmtPnl(entry.pnl)}
                       </p>
                       <p className="text-[6px] md:text-[9px] leading-none" style={{ color: c?.text, opacity: 0.7 }}>
-                        {entry.tradeCount}t
+                        {entry.tradeCount} {entry.tradeCount === 1 ? "Trade" : "Trades"}
                       </p>
                     </>
                   )}
@@ -163,9 +163,9 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
               <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                 {wDays > 0 ? fmtPnl(wPnl) : "$0"}
               </p>
-              {wDays > 0 && (
-                <p className="text-[6px] md:text-[9px] leading-none text-muted-foreground">
-                  {wDays}d
+              {wTrades > 0 && (
+                <p className="text-[6px] md:text-[9px] leading-none" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))", opacity: 0.7 }}>
+                  {wTrades} {wTrades === 1 ? "Trade" : "Trades"}
                 </p>
               )}
             </div>

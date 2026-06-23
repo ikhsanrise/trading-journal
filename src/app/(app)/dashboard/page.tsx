@@ -170,14 +170,18 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState("all");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
-    fetch(`/api/dashboard?period=${period}`)
+    const params = new URLSearchParams({ period });
+    if (selectedAccountId) params.set("accountId", selectedAccountId);
+    fetch(`/api/dashboard?${params}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [period]);
+  }, [period, selectedAccountId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -241,10 +245,46 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">Dashboard</span>
-          {data?.account && (
-            <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 truncate max-w-[120px]">
-              {data.account.name}
-            </span>
+          {/* Account Switcher Dropdown */}
+          {data?.accounts && data.accounts.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setAccountOpen(!accountOpen)}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 transition-colors max-w-[160px]"
+              >
+                <span className="truncate">{data.account?.name ?? "Select Account"}</span>
+                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {accountOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
+                  <div className="absolute left-0 top-8 z-50 min-w-[180px] bg-card border rounded-xl shadow-xl py-1 overflow-hidden">
+                    {data.accounts.map((acc: any) => (
+                      <button
+                        key={acc.id}
+                        onClick={() => {
+                          setSelectedAccountId(acc.id);
+                          setAccountOpen(false);
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
+                          (selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && "text-indigo-500 font-medium"
+                        )}
+                      >
+                        <span className="truncate">{acc.name}</span>
+                        {(selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && (
+                          <svg className="w-3 h-3 shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-1 flex-wrap">

@@ -85,11 +85,6 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
     return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
 
-// Ganti ini:
-const fmtPnl = (v: number) => Math.abs(v) >= 1000
-  ? `${v < 0 ? "-" : "+"}$${(Math.abs(v) / 1000).toFixed(1)}K`
-  : `${v >= 0 ? "+" : ""}${formatCurrency(v)}`;
-
 // Jadi ini:
 const fmtPnl = (v: number) => {
   const abs = Math.abs(v);

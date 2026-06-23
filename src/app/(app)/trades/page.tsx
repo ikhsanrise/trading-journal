@@ -4,6 +4,7 @@ import { Plus, Upload, Search, Pencil, Trash2, ChevronDown, ChevronRight } from 
 import { cn, formatCurrency, formatR, formatDate, getDurationString } from "@/lib/utils";
 import TradeFormModal from "@/components/trades/TradeFormModal";
 import ImportModal from "@/components/trades/ImportModal";
+import AccountSwitcher from "@/components/layout/AccountSwitcher";
 
 const OUTCOME_FILTERS = [
   { label: "All", value: "" },
@@ -67,6 +68,7 @@ export default function TradesPage() {
   const [editTrade, setEditTrade] = useState<any>(null);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [stats, setStats] = useState({ netPnL: 0, wins: 0, losses: 0, total: 0 });
+  const [accountId, setAccountId] = useState("");
 
   const fetchTrades = useCallback(async () => {
     setLoading(true);
@@ -75,6 +77,7 @@ export default function TradesPage() {
     if (outcome) params.set("outcome", outcome);
     if (direction) params.set("direction", direction);
     if (setupCat) params.set("setupCategory", setupCat);
+    if (accountId) params.set("accountId", accountId);
     params.set("page", String(page));
     params.set("pageSize", "15");
     const res = await fetch(`/api/trades?${params}`);
@@ -87,7 +90,7 @@ export default function TradesPage() {
     const losses = (data.trades ?? []).filter((t: any) => t.outcome === "loss").length;
     setStats({ netPnL: pnl, wins, losses, total: data.total ?? 0 });
     setLoading(false);
-  }, [search, outcome, direction, setupCat, page]);
+  }, [search, outcome, direction, setupCat, page, accountId]);
 
   useEffect(() => { fetchTrades(); }, [fetchTrades]);
 
@@ -108,7 +111,7 @@ export default function TradesPage() {
     <div className="p-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold">Trade Log</span>
+        <div className="flex items-center gap-2"><span className="text-sm font-semibold">Trade Log</span><AccountSwitcher value={accountId} onChange={(id) => { setAccountId(id); }} /></div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border text-muted-foreground hover:text-foreground transition-colors">

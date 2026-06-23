@@ -6,6 +6,7 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import AccountSwitcher from "@/components/layout/AccountSwitcher";
 
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
@@ -25,6 +26,7 @@ export default function CalendarPage() {
   const [yearData, setYearData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const [accountId, setAccountId] = useState("");
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
@@ -37,7 +39,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/dashboard?period=all")
+    fetch(`/api/dashboard?period=all${accountId ? `&accountId=${accountId}` : ""}`)
       .then((r) => r.json())
       .then((d) => {
         setCalendarData(d.calendar ?? []);

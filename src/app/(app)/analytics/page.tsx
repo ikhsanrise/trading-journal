@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { cn, formatCurrency, formatR } from "@/lib/utils";
 import { TrendingDown } from "lucide-react";
+import AccountSwitcher from "@/components/layout/AccountSwitcher";
 
 const PROFIT = "#16a34a";
 const LOSS = "#dc2626";
@@ -97,13 +98,14 @@ function HeatmapCell({ pnl, trades, winRate }: { pnl: number; trades: number; wi
 export default function AnalyticsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [accountId, setAccountId] = useState("");
 
   useEffect(() => {
-    fetch("/api/analytics")
+    fetch(`/api/analytics${accountId ? `?accountId=${accountId}` : ""}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [accountId]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">Loading analytics...</div>

@@ -128,14 +128,14 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
         return (
           <div key={wi} className="grid grid-cols-8 gap-1 mb-1">
             {wk.map((day, di) => {
-              if (!day) return <div key={di} className="rounded-xl border border-dashed border-border/30 h-10" />;
+              if (!day) return <div key={di} className="rounded-xl border border-dashed border-border/30 h-10 md:h-16" />;
               const key = format(day, "yyyy-MM-dd");
               const entry = dataMap.get(key);
               const c = entry ? getCellColors(entry.pnl) : null;
               const isToday = key === format(new Date(), "yyyy-MM-dd");
               return (
                 <div key={di}
-                  className="rounded-xl border h-10 p-1 flex flex-col justify-between transition-all"
+                  className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between transition-all"
                   style={c
                     ? { background: c.bg, borderColor: c.border }
                     : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))" }
@@ -144,7 +144,7 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
                     {format(day, "d")}
                   </p>
                   {entry && (
-                    <p className="text-[7px] font-bold leading-none truncate" style={{ color: c?.text }}>
+                    <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: c?.text }}>
                       {fmtPnl(entry.pnl)}
                     </p>
                   )}
@@ -152,10 +152,10 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
               );
             })}
             {/* Week summary */}
-            <div className="rounded-xl border h-10 p-1 flex flex-col justify-between"
+            <div className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between"
               style={wColors ? { background: wColors.bg, borderColor: wColors.border } : { borderColor: "hsl(var(--border))" }}>
-              <p className="text-[7px] text-muted-foreground leading-none">W{wi + 1}</p>
-              <p className="text-[7px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
+              <p className="text-[7px] md:text-[10px] text-muted-foreground leading-none">W{wi + 1}</p>
+              <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                 {wDays > 0 ? fmtPnl(wPnl) : "$0"}
               </p>
             </div>

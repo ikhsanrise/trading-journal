@@ -85,9 +85,19 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
     return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
 
-  const fmtPnl = (v: number) => Math.abs(v) >= 1000
-    ? `${v < 0 ? "-" : "+"}$${(Math.abs(v) / 1000).toFixed(1)}K`
-    : `${v >= 0 ? "+" : ""}${formatCurrency(v)}`;
+// Ganti ini:
+const fmtPnl = (v: number) => Math.abs(v) >= 1000
+  ? `${v < 0 ? "-" : "+"}$${(Math.abs(v) / 1000).toFixed(1)}K`
+  : `${v >= 0 ? "+" : ""}${formatCurrency(v)}`;
+
+// Jadi ini:
+const fmtPnl = (v: number) => {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? "-" : "+";
+  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1)}K`;
+  const formatted = abs.toFixed(2);
+  return `${sign}$${formatted}`;
+};
 
   return (
     <div className="bg-card border rounded-xl p-3">

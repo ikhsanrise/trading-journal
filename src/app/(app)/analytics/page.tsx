@@ -101,6 +101,8 @@ export default function AnalyticsPage() {
   const [accountId, setAccountId] = useState("");
 
   useEffect(() => {
+    setLoading(true);
+    setData(null);
     fetch(`/api/analytics${accountId ? `?accountId=${accountId}` : ""}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })

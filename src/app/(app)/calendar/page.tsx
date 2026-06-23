@@ -46,7 +46,7 @@ export default function CalendarPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [accountId]);
 
   const dataMap = new Map(calendarData.map((d: any) => [d.date, d]));
 

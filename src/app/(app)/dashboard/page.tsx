@@ -144,9 +144,14 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
                     {format(day, "d")}
                   </p>
                   {entry && (
-                    <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: c?.text }}>
-                      {fmtPnl(entry.pnl)}
-                    </p>
+                    <>
+                      <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: c?.text }}>
+                        {fmtPnl(entry.pnl)}
+                      </p>
+                      <p className="text-[6px] md:text-[9px] leading-none" style={{ color: c?.text, opacity: 0.7 }}>
+                        {entry.tradeCount}t
+                      </p>
+                    </>
                   )}
                 </div>
               );
@@ -158,6 +163,11 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
               <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                 {wDays > 0 ? fmtPnl(wPnl) : "$0"}
               </p>
+              {wDays > 0 && (
+                <p className="text-[6px] md:text-[9px] leading-none text-muted-foreground">
+                  {wDays}d
+                </p>
+              )}
             </div>
           </div>
         );

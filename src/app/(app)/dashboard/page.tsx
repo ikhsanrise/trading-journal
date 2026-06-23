@@ -23,6 +23,15 @@ const PERIODS = [
 const CURVE_COLOR = "#6366f1";
 const DAYS_OF_WEEK_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
+const TOOLTIP_STYLE = {
+  fontSize: 11,
+  borderRadius: 8,
+  backgroundColor: '#0f0f1a',
+  border: '1px solid rgba(255,255,255,0.12)',
+  color: '#ffffff',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+};
+
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div className="bg-card border rounded-xl p-3">
@@ -68,86 +77,84 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
   function getCellColors(pnl: number) {
     const isDark = typeof window !== "undefined" && document.documentElement.classList.contains("dark");
     if (pnl > 0) return isDark
-      ? { bg: "rgba(22,163,74,0.18)", border: "rgba(22,163,74,0.5)", text: "#86efac", sub: "#4ade80" }
-      : { bg: "#f0fdf4", border: "#86efac", text: "#15803d", sub: "#16a34a" };
+      ? { bg: "rgba(22,163,74,0.2)", border: "rgba(22,163,74,0.6)", text: "#86efac" }
+      : { bg: "#f0fdf4", border: "#86efac", text: "#15803d" };
     if (pnl < 0) return isDark
-      ? { bg: "rgba(220,38,38,0.18)", border: "rgba(220,38,38,0.5)", text: "#fca5a5", sub: "#f87171" }
-      : { bg: "#fff1f2", border: "#fca5a5", text: "#b91c1c", sub: "#dc2626" };
-    return { bg: "transparent", border: "transparent", text: "#64748b", sub: "#94a3b8" };
+      ? { bg: "rgba(220,38,38,0.2)", border: "rgba(220,38,38,0.6)", text: "#fca5a5" }
+      : { bg: "#fff1f2", border: "#fca5a5", text: "#b91c1c" };
+    return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
 
   const fmtPnl = (v: number) => Math.abs(v) >= 1000
-    ? `${v < 0 ? "-" : ""}$${(Math.abs(v) / 1000).toFixed(1)}K`
-    : formatCurrency(v);
+    ? `${v < 0 ? "-" : "+"}$${(Math.abs(v) / 1000).toFixed(1)}K`
+    : `${v >= 0 ? "+" : ""}${formatCurrency(v)}`;
 
   return (
     <div className="bg-card border rounded-xl p-3">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setCurrent(subMonths(current, 1))}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors border">
+          <button onClick={() => setCurrent(subMonths(current, 1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors border">
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
           <span className="text-xs font-semibold min-w-[110px] text-center">{format(current, "MMMM yyyy")}</span>
-          <button onClick={() => setCurrent(addMonths(current, 1))}
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors border">
+          <button onClick={() => setCurrent(addMonths(current, 1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors border">
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setCurrent(new Date())}
-            className="text-[10px] px-2 py-1 rounded-lg border text-muted-foreground hover:bg-muted transition-colors">
+          <button onClick={() => setCurrent(new Date())} className="text-[10px] px-2 py-1 rounded-lg border text-muted-foreground hover:bg-muted transition-colors">
             Now
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn("font-semibold text-xs", totalPnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
-            {fmtPnl(totalPnl)}
-          </span>
+          <span className={cn("font-semibold text-xs", totalPnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>{fmtPnl(totalPnl)}</span>
           <span className="text-[10px] text-muted-foreground">{totalTradeDays}d</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-8 gap-1 mb-1">
-        {["S","M","T","W","T","F","S"].map((d, i) => (
-          <div key={i} className="text-center text-[9px] font-medium text-muted-foreground py-0.5">{d}</div>
+      {/* Day headers */}
+      <div className="grid grid-cols-8 gap-1 mb-1.5">
+        {["S","M","T","W","T","F","S","Wk"].map((d, i) => (
+          <div key={i} className="text-center text-[9px] font-medium text-muted-foreground">{d}</div>
         ))}
-        <div className="text-center text-[9px] font-medium text-muted-foreground py-0.5">Wk</div>
       </div>
 
+      {/* Weeks */}
       {weeks.map((wk, wi) => {
         const { pnl: wPnl, tradeDays: wDays } = summarizeWeek(wk);
         const wColors = wDays > 0 ? getCellColors(wPnl) : null;
         return (
           <div key={wi} className="grid grid-cols-8 gap-1 mb-1">
             {wk.map((day, di) => {
-              if (!day) return <div key={di} className="rounded-lg border border-dashed border-border/40 min-h-[44px]" />;
+              if (!day) return <div key={di} className="rounded-xl border border-dashed border-border/30 h-10" />;
               const key = format(day, "yyyy-MM-dd");
               const entry = dataMap.get(key);
               const c = entry ? getCellColors(entry.pnl) : null;
               const isToday = key === format(new Date(), "yyyy-MM-dd");
               return (
-                <div key={di} className="rounded-lg border min-h-[44px] p-1 transition-all"
+                <div key={di}
+                  className="rounded-xl border h-10 p-1 flex flex-col justify-between transition-all"
                   style={c
                     ? { background: c.bg, borderColor: c.border }
                     : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))" }
                   }>
-                  <p className={cn("text-[9px] font-medium", isToday && !c ? "text-indigo-600" : "text-muted-foreground")}>
+                  <p className={cn("text-[9px] font-semibold leading-none", isToday && !c ? "text-indigo-500" : "text-muted-foreground")}>
                     {format(day, "d")}
                   </p>
                   {entry && (
-                    <p className="text-[9px] font-bold leading-tight" style={{ color: c?.text }}>
+                    <p className="text-[7px] font-bold leading-none truncate" style={{ color: c?.text }}>
                       {fmtPnl(entry.pnl)}
                     </p>
                   )}
                 </div>
               );
             })}
-            <div className="rounded-lg border min-h-[44px] p-1 flex flex-col justify-center"
+            {/* Week summary */}
+            <div className="rounded-xl border h-10 p-1 flex flex-col justify-between"
               style={wColors ? { background: wColors.bg, borderColor: wColors.border } : { borderColor: "hsl(var(--border))" }}>
-              <p className="text-[8px] text-muted-foreground">W{wi + 1}</p>
-              <p className="text-[9px] font-bold leading-tight" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
+              <p className="text-[7px] text-muted-foreground leading-none">W{wi + 1}</p>
+              <p className="text-[7px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                 {wDays > 0 ? fmtPnl(wPnl) : "$0"}
               </p>
-              <p className="text-[8px] text-muted-foreground">{wDays}d</p>
             </div>
           </div>
         );
@@ -181,10 +188,18 @@ export default function DashboardPage() {
   const bestDay = calendar.length ? calendar.reduce((a: any, b: any) => b.pnl > a.pnl ? b : a, calendar[0]) : null;
   const worstDay = calendar.length ? calendar.reduce((a: any, b: any) => b.pnl < a.pnl ? b : a, calendar[0]) : null;
 
-  const cumulativeCurve = equityCurve.map((p: any) => ({
-    date: p.date.slice(5),
-    pnl: Math.round((p.balance - (data?.account?.initialBalance ?? 0)) * 100) / 100,
-  }));
+  const cumulativeCurve = equityCurve.length > 0
+    ? equityCurve.map((p: any) => ({
+        date: p.date.slice(5),
+        pnl: Math.round((p.balance - (data?.account?.initialBalance ?? 0)) * 100) / 100,
+      }))
+    : (() => {
+        let running = 0;
+        return calendar
+          .slice()
+          .sort((a: any, b: any) => a.date.localeCompare(b.date))
+          .map((d: any) => { running += d.pnl; return { date: d.date.slice(5), pnl: Math.round(running * 100) / 100 }; });
+      })();
 
   const dailyBarData = calendar
     .slice()
@@ -219,6 +234,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-3 space-y-3">
+      {/* Top bar */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">Dashboard</span>
@@ -263,13 +279,14 @@ export default function DashboardPage() {
             <StatCard label="Current Streak" value={stats?.streak ? `${stats.streak.current} ${stats.streak.type === 'win' ? '🔥' : '❄️'}` : "—"} sub={stats?.streak ? `Max win: ${stats.streak.maxWin} · Max loss: ${stats.streak.maxLoss}` : undefined} color={stats?.streak?.type === 'win' ? 'text-[#16a34a]' : 'text-[#dc2626]'} />
           </div>
 
+          {/* Charts */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-card border rounded-xl p-3">
               <div className="flex items-center gap-1.5 mb-2">
                 <p className="text-xs font-medium">Daily Net Cumulative P&L</p>
                 <Info className="w-3 h-3 text-muted-foreground" />
               </div>
-              {cumulativeCurve.length > 1 ? (
+              {cumulativeCurve.length > 0 ? (
                 <ResponsiveContainer width="100%" height={140}>
                   <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <defs>
@@ -278,10 +295,10 @@ export default function DashboardPage() {
                         <stop offset="100%" stopColor={CURVE_COLOR} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`} />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, "USD", true), "Cumulative P&L"]} contentStyle={{ fontSize: 11, borderRadius: 8, backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v, "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} />
                     <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={{ r: 3, fill: CURVE_COLOR }} activeDot={{ r: 5 }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -298,11 +315,11 @@ export default function DashboardPage() {
               {dailyBarData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={140}>
                   <BarChart data={dailyBarData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`} />
-                    <ReferenceLine y={0} stroke="var(--border)" />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, "USD", true), "Daily P&L"]} contentStyle={{ fontSize: 11, borderRadius: 8, backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v, "USD", true), "Daily P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                     <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                       {dailyBarData.map((entry: any, i: number) => (
                         <Cell key={i} fill={entry.pnl >= 0 ? "#16a34a" : "#dc2626"} />
@@ -351,7 +368,7 @@ export default function DashboardPage() {
 
           <CalendarHeatmap calendarData={calendar} />
 
-          <div className="bg-card border rounded-xl p-3">
+          <div className="bg-card border rounded-xl p-3 mb-2">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium">Recent Trades</p>
               <Link href="/trades" className="text-[11px] text-indigo-600 hover:underline">View all ↗</Link>

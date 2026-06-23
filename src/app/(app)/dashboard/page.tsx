@@ -85,14 +85,12 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
     return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
 
-// Jadi ini:
-const fmtPnl = (v: number) => {
-  const abs = Math.abs(v);
-  const sign = v < 0 ? "-" : "+";
-  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1)}K`;
-  const formatted = abs.toFixed(2);
-  return `${sign}$${formatted}`;
-};
+  const fmtPnl = (v: number) => {
+    const abs = Math.abs(v);
+    const sign = v < 0 ? "-" : "+";
+    if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1)}K`;
+    return `${sign}$${abs.toFixed(2)}`;
+  };
 
   return (
     <div className="bg-card border rounded-xl p-3">
@@ -371,9 +369,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <CalendarHeatmap calendarData={calendar} />
-
-          <div className="bg-card border rounded-xl p-3 mb-2">
+          {/* Desktop: side by side, Mobile: stacked */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            <div className="lg:col-span-3">
+              <CalendarHeatmap calendarData={calendar} />
+            </div>
+            <div className="bg-card border rounded-xl p-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium">Recent Trades</p>
               <Link href="/trades" className="text-[11px] text-indigo-600 hover:underline">View all ↗</Link>
@@ -398,6 +399,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         </>
       )}

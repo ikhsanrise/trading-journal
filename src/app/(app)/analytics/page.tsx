@@ -19,9 +19,9 @@ const SESSION_LABELS: Record<string, string> = {
 
 function StatRow({ label, value, value2, color }: { label: string; value: string; value2?: string; color?: string }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b last:border-0">
+    <div className="flex items-start justify-between py-2 border-b last:border-0 gap-2">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 flex-wrap justify-end">
         {value2 && <span className="text-xs text-muted-foreground">{value2}</span>}
         <span className={cn("text-xs font-semibold", color)}>{value}</span>
       </div>
@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* P&L by Day of Week bar chart */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-card border rounded-xl p-4">
           <p className="text-xs font-semibold mb-3">P&L by Day of Week</p>
           <ResponsiveContainer width="100%" height={140}>

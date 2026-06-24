@@ -135,7 +135,7 @@ export default function CalendarPage() {
               </div>
 
               {/* Monthly stats */}
-              <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-2 flex-wrap text-xs">
                 <div className="text-right">
                   <p className="text-muted-foreground">Monthly P&L</p>
                   <p className={cn("font-semibold", monthPnL > 0 ? "text-[#16a34a]" : monthPnL < 0 ? "text-[#dc2626]" : "")}>
@@ -162,7 +162,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Day headers */}
-            <div className="grid grid-cols-8 gap-1.5 mb-1.5">
+            <div className="grid grid-cols-8 gap-0.5 sm:gap-1.5 mb-1.5">
               {DAYS.map((d) => (
                 <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
               ))}
@@ -174,7 +174,7 @@ export default function CalendarPage() {
               const { pnl: wPnl, tradeDays: wDays, tradeCount: wCount } = weekSummary(wk);
               const wColors = wDays > 0 ? getCellColors(wPnl, isDark) : null;
               return (
-                <div key={wi} className="grid grid-cols-8 gap-1.5 mb-1.5">
+                <div key={wi} className="grid grid-cols-8 gap-0.5 sm:gap-1.5 mb-1.5">
                   {wk.map((day, di) => {
                     if (!day) return <div key={di} className="rounded-xl border border-dashed border-border/30 min-h-[72px]" />;
                     const key = format(day, "yyyy-MM-dd");
@@ -206,7 +206,7 @@ export default function CalendarPage() {
                   })}
 
                   {/* Week summary */}
-                  <div className="rounded-xl border min-h-[72px] p-2 flex flex-col justify-center"
+                  <div className="rounded-xl border min-h-[56px] sm:min-h-[72px] p-1 sm:p-2 flex flex-col justify-center"
                     style={wColors
                       ? { background: wColors.bg, borderColor: wColors.border }
                       : { borderColor: "hsl(var(--border))" }
@@ -233,7 +233,7 @@ export default function CalendarPage() {
                 YTD: {formatCurrency(yearPnL, account?.currency)}
               </p>
             </div>
-            <div className="grid grid-cols-12 gap-1.5">
+            <div className="grid grid-cols-6 md:grid-cols-12 gap-1.5">
               {yearMonthly.map((m, i) => {
                 const c = m.tradeDays > 0 ? getCellColors(m.pnl, isDark) : null;
                 const isCurrent = i === getMonth(current);

@@ -29,6 +29,7 @@ export default function CalendarPage() {
   const [accountId, setAccountId] = useState("");
   const [account, setAccount] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState<{ date: string; entry: any } | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<{ week: number; pnl: number; days: number; count: number } | null>(null);
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
@@ -214,9 +215,12 @@ export default function CalendarPage() {
 
                   {/* Week summary */}
                   <div className="rounded-xl border min-h-[52px] sm:min-h-[72px] p-1 sm:p-2 flex flex-col justify-center overflow-hidden"
+                    role={wDays > 0 ? "button" : undefined}
+                    tabIndex={wDays > 0 ? 0 : undefined}
+                    onClick={() => { if (wDays > 0) setSelectedWeek({ week: wi + 1, pnl: wPnl, days: wDays, count: wCount }); }}
                     style={wColors
-                      ? { background: wColors.bg, borderColor: wColors.border }
-                      : { borderColor: "hsl(var(--border))" }
+                      ? { background: wColors.bg, borderColor: wColors.border, cursor: wDays > 0 ? "pointer" : "default" }
+                      : { borderColor: "hsl(var(--border))", cursor: wDays > 0 ? "pointer" : "default" }
                     }>
                     <p className="text-[9px] text-muted-foreground">Wk{wi + 1}</p>
                     <p className="text-[10px] sm:text-[12px] font-bold truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
@@ -271,6 +275,52 @@ export default function CalendarPage() {
           </div>
         </>
       )}
+      {/* Week detail popup */}
+      {selectedWeek && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={() => setSelectedWeek(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{format(current, "MMMM yyyy")}</p>
+                <p className="text-sm font-semibold">Week {selectedWeek.week}</p>
+              </div>
+              <button onClick={() => setSelectedWeek(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Net P&L</p>
+                <p className={cn("text-sm font-bold", selectedWeek.pnl > 0 ? "text-[#16a34a]" : selectedWeek.pnl < 0 ? "text-[#dc2626]" : "")}>
+                  {formatCurrency(selectedWeek.pnl, account?.currency)}
+                </p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Trade Days</p>
+                <p className="text-sm font-bold">{selectedWeek.days}</p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Trades</p>
+                <p className="text-sm font-bold">{selectedWeek.count}</p>
+              </div>
+            </div>
+            <div className={cn("rounded-xl p-3 text-center", selectedWeek.pnl > 0 ? "bg-[#16a34a]/10" : "bg-[#dc2626]/10")}>
+              <p className={cn("text-xs font-semibold", selectedWeek.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                {selectedWeek.pnl > 0 ? "✓ Profitable Week" : selectedWeek.pnl < 0 ? "✗ Loss Week" : "Break Even"}
+              </p>
+            </div>
+            <button onClick={() => setSelectedWeek(null)}
+              className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Day detail popup */}
       {selectedDay && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"

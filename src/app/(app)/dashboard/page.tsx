@@ -44,6 +44,8 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
 
 function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; currency?: string }) {
   const [current, setCurrent] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<{ date: string; entry: any } | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<{ week: number; pnl: number; days: number; count: number } | null>(null);
   const dataMap = new Map(calendarData.map((d) => [d.date, d]));
 
   const start = startOfMonth(current);
@@ -130,10 +132,12 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
               const isToday = key === format(new Date(), "yyyy-MM-dd");
               return (
                 <div key={di}
+                  role={entry ? "button" : undefined}
+                  onClick={() => { if (entry) setSelectedDay({ date: key, entry }); }}
                   className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between transition-all"
                   style={c
-                    ? { background: c.bg, borderColor: c.border }
-                    : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))" }
+                    ? { background: c.bg, borderColor: c.border, cursor: entry ? "pointer" : "default" }
+                    : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))", cursor: entry ? "pointer" : "default" }
                   }>
                   <p className={cn("text-[9px] font-semibold leading-none", isToday && !c ? "text-indigo-500" : "text-muted-foreground")}>
                     {format(day, "d")}
@@ -153,7 +157,9 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
             })}
             {/* Week summary */}
             <div className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between"
-              style={wColors ? { background: wColors.bg, borderColor: wColors.border } : { borderColor: "hsl(var(--border))" }}>
+              role={wDays > 0 ? "button" : undefined}
+              onClick={() => { if (wDays > 0) setSelectedWeek({ week: wi + 1, pnl: wPnl, days: wDays, count: wTrades }); }}
+              style={wColors ? { background: wColors.bg, borderColor: wColors.border, cursor: wDays > 0 ? "pointer" : "default" } : { borderColor: "hsl(var(--border))", cursor: wDays > 0 ? "pointer" : "default" }}>
               <p className="text-[7px] md:text-[10px] text-muted-foreground leading-none">W{wi + 1}</p>
               <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                 {wDays > 0 ? fmtPnl(wPnl) : "$0"}
@@ -167,6 +173,77 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
           </div>
         );
       })}
+      {/* Day popup */}
+      {selectedDay && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedDay(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Trading Day</p>
+                <p className="text-sm font-semibold">{format(new Date(selectedDay.date + "T00:00:00"), "EEEE, d MMMM yyyy")}</p>
+              </div>
+              <button onClick={() => setSelectedDay(null)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Net P&L</p>
+                <p className={cn("text-sm font-bold", selectedDay.entry.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                  {formatCurrency(selectedDay.entry.pnl, currency)}
+                </p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Total Trades</p>
+                <p className="text-sm font-bold">{selectedDay.entry.tradeCount}</p>
+              </div>
+            </div>
+            <div className={cn("rounded-xl p-3 text-center", selectedDay.entry.pnl > 0 ? "bg-[#16a34a]/10" : "bg-[#dc2626]/10")}>
+              <p className={cn("text-xs font-semibold", selectedDay.entry.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                {selectedDay.entry.pnl > 0 ? "✓ Profitable Day" : selectedDay.entry.pnl < 0 ? "✗ Loss Day" : "Break Even"}
+              </p>
+            </div>
+            <button onClick={() => setSelectedDay(null)} className="w-full mt-3 py-2 text-xs text-muted-foreground">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Week popup */}
+      {selectedWeek && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedWeek(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{format(current, "MMMM yyyy")}</p>
+                <p className="text-sm font-semibold">Week {selectedWeek.week}</p>
+              </div>
+              <button onClick={() => setSelectedWeek(null)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">✕</button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Net P&L</p>
+                <p className={cn("text-sm font-bold", selectedWeek.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                  {formatCurrency(selectedWeek.pnl, currency)}
+                </p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Trade Days</p>
+                <p className="text-sm font-bold">{selectedWeek.days}</p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Trades</p>
+                <p className="text-sm font-bold">{selectedWeek.count}</p>
+              </div>
+            </div>
+            <div className={cn("rounded-xl p-3 text-center", selectedWeek.pnl > 0 ? "bg-[#16a34a]/10" : "bg-[#dc2626]/10")}>
+              <p className={cn("text-xs font-semibold", selectedWeek.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                {selectedWeek.pnl > 0 ? "✓ Profitable Week" : selectedWeek.pnl < 0 ? "✗ Loss Week" : "Break Even"}
+              </p>
+            </div>
+            <button onClick={() => setSelectedWeek(null)} className="w-full mt-3 py-2 text-xs text-muted-foreground">Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

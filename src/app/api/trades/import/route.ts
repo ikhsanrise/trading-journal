@@ -127,9 +127,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Account not found" }, { status: 404 });
 
   let text = await file.text();
+  const allLines = text.split("\n");
+
+  // === Parse Deals section untuk deposit/withdraw ===
+  let dealsStart = -1;
+  for (let i = 0; i < allLines.length; i++) {
+    if (allLines[i].trim().startsWith("Time,Deal,Symbol,Type")) {
+      dealsStart = i + 1;
+      break;
+    }
+  }
+
+  if (dealsStart > 0) {
+    let depTotal = 0, wdrTotal = 0;
+    const txRows: { type: string; amount: number; note: string; date: Date }[] = [];
+    for (let i = dealsStart; i < allLines.length; i++) {
+      const row = allLines[i].split(",").map((s: string) => s.trim());
+      if (!row[0] || row[0].startsWith("Results") || row[0].startsWith("Total")) break;
+      const type = row[3]?.toLowerCase();
+      if (type === "balance") {
+        const amount = parseNum(row[11]);
+        const comment = row[13] ?? "";
+        const date = parseDate(row[0]) ?? new Date();
+        if (amount > 0) { depTotal += amount; txRows.push({ type: "deposit", amount, note: comment, date }); }
+        else if (amount < 0) { wdrTotal += Math.abs(amount); txRows.push({ type: "withdraw", amount: Math.abs(amount), note: comment, date }); }
+      }
+    }
+    if (txRows.length > 0) {
+      for (const tx of txRows) {
+        await prisma.transaction.create({ data: { accountId, ...tx } });
+      }
+      await prisma.tradingAccount.update({
+        where: { id: accountId },
+        data: { totalDeposit: { increment: depTotal }, totalWithdraw: { increment: wdrTotal } },
+      });
+    }
+  }
 
   // Skip metadata rows untuk format HFM (baris sebelum "Positions," atau "Time,Position,")
-  const lines = text.split("\n");
+  const lines = allLines;
   let dataStart = 0;
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i].trim();

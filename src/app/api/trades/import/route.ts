@@ -77,8 +77,12 @@ function parseJournalRow(row: any) {
 
 function parseNum(val: any): number {
   if (val == null) return 0;
-  // Handle angka dengan spasi: "4 178.90" -> 4178.90
-  return parseFloat(String(val).replace(/\s/g, "")) || 0;
+  const str = String(val).trim();
+  if (str === "" || str === "-") return 0;
+  // Handle format HFM: "4 178.90" -> 4178.90, "-134 572.25" -> -134572.25
+  // Spasi adalah thousand separator, titik adalah decimal separator
+  const cleaned = str.replace(/\s/g, "");
+  return parseFloat(cleaned) || 0;
 }
 
 function detectFormat(headers: string[]): "hfm" | "journal" | "mt4" {

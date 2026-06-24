@@ -214,8 +214,7 @@ export default function CalendarPage() {
                     <p className="text-[10px] text-muted-foreground">Week {wi + 1}</p>
                     <p className="text-[12px] font-bold" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                       {wDays > 0
-                        ? (Math.abs(wPnl) >= 1000
-                          formatCurrency(wPnl, account?.currency))
+                        ? formatCurrency(wPnl, account?.currency)
                         : "$0"}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{wDays} {wDays === 1 ? "day" : "days"}</p>

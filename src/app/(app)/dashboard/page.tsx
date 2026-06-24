@@ -351,52 +351,41 @@ export default function DashboardPage() {
           </div>
 
           {/* Charts */}
-          <div className="space-y-3">
-            {/* Equity Curve - Full Width */}
-            <div className="bg-card border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-card border rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-semibold">Equity Curve</p>
+                  <p className="text-xs font-medium">Daily Net Cumulative P&L</p>
                   <Info className="w-3 h-3 text-muted-foreground" />
                 </div>
-                <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
                   {(["daily","weekly","monthly"] as const).map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setEquityView(v)}
-                      className={`text-[10px] px-2.5 py-1 rounded-md font-medium transition-colors capitalize ${equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >{v}</button>
+                    <button key={v} onClick={() => setEquityView(v)}
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-medium transition-colors capitalize ${equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >{v.slice(0,1).toUpperCase() + v.slice(1,3)}</button>
                   ))}
                 </div>
               </div>
               {cumulativeCurve.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={140}>
                   <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.35} />
+                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.3} />
                         <stop offset="100%" stopColor={CURVE_COLOR} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={52} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? "USD"; const sym = cur === "IDR" ? "Rp" : "$"; return Math.abs(v) >= 1000000 ? `${sym}${(v/1000000).toFixed(1)}M` : Math.abs(v) >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
+                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? "USD"; const sym = cur === "IDR" ? "Rp" : "$"; return Math.abs(v) >= 1000000 ? `${sym}${(v/1000000).toFixed(1)}M` : Math.abs(v) >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
                     <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="4 2" />
-                    <Tooltip
-                      formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Equity"]}
-                      contentStyle={TOOLTIP_STYLE}
-                      labelStyle={{ color: "hsl(var(--muted-foreground))" }}
-                      itemStyle={{ color: CURVE_COLOR }}
-                    />
-                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR }} />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "hsl(var(--muted-foreground))" }} itemStyle={{ color: "hsl(var(--foreground))" }} />
+                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={{ r: 3, fill: CURVE_COLOR }} activeDot={{ r: 5 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-48 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
+                <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
               )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
             <div className="bg-card border rounded-xl p-3">
               <div className="flex items-center gap-1.5 mb-2">
@@ -423,7 +412,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            </div>
             <div className="bg-card border rounded-xl p-3">
               <p className="text-xs font-medium mb-2">Win Rate by Instrument</p>
               <div className="space-y-2">

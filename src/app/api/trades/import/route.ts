@@ -197,29 +197,21 @@ export async function POST(req: NextRequest) {
   const failed = [];
   let totalPnl = 0;
 
+  const tradesToCreate: any[] = [];
   for (const row of data as any[]) {
     try {
       const parsed = format === "journal" ? parseJournalRow(row) : parseHFMRow(row);
-
       if (!parsed.symbol || !parsed.lotSize) continue;
-      // Skip baris summary/total di HFM
       if (parsed.symbol === "" || isNaN(parsed.entryPrice) || parsed.entryPrice === 0) continue;
 
       const status = parsed.exitDate && parsed.exitDate.trim() !== "" ? "closed" : "open";
-
       let rMultiple = parsed.rMultiple;
       let outcome = parsed.outcome;
 
       if (!rMultiple && parsed.exitPrice && parsed.stopLoss) {
-        rMultiple = calculateRMultiple(
-          parsed.direction,
-          parsed.entryPrice,
-          parsed.exitPrice,
-          parsed.stopLoss
-        );
+        rMultiple = calculateRMultiple(parsed.direction, parsed.entryPrice, parsed.exitPrice, parsed.stopLoss);
       }
       if (!outcome) {
-        // Prioritas: pakai PnL untuk outcome (lebih reliable dari rMultiple saat SL tidak ada)
         if (parsed.pnl > 0) outcome = "win";
         else if (parsed.pnl < 0) outcome = "loss";
         else if (rMultiple !== null && rMultiple !== 0) outcome = getOutcomeFromR(rMultiple);
@@ -228,11 +220,7 @@ export async function POST(req: NextRequest) {
 
       const entryDate = parseDate(parsed.entryDate) ?? new Date();
       const exitDate = parsed.exitDate ? parseDate(parsed.exitDate) : null;
-
-      // Detect session dari entryDate (GMT+0 dari HFM)
-      const detectedSession = (format === "hfm")
-        ? detectSession(entryDate)
-        : ((parsed as any).session ?? null);
+      const detectedSession = format === "hfm" ? detectSession(entryDate) : ((parsed as any).session ?? null);
 
       const tradeData: any = {
         accountId,
@@ -254,21 +242,24 @@ export async function POST(req: NextRequest) {
         session: detectedSession,
       };
 
-      // Extra fields untuk format journal
       if (format === "journal") {
-        if ((parsed as any).session) tradeData.session = (parsed as any).session;
         if ((parsed as any).timeframe) tradeData.timeframe = (parsed as any).timeframe;
         if ((parsed as any).mood) tradeData.mood = (parsed as any).mood;
         if ((parsed as any).notes) tradeData.notes = (parsed as any).notes;
         if ((parsed as any).setupCategory) tradeData.setupCategory = (parsed as any).setupCategory;
       }
 
-      await prisma.trade.create({ data: tradeData });
-      created.push(parsed.symbol);
+      tradesToCreate.push(tradeData);
       totalPnl += parsed.pnl || 0;
     } catch (e) {
       failed.push({ error: String(e) });
     }
+  }
+
+  // Batch insert semua trades sekaligus
+  if (tradesToCreate.length > 0) {
+    await prisma.trade.createMany({ data: tradesToCreate, skipDuplicates: true });
+    created.push(...tradesToCreate.map(t => t.symbol));
   }
 
   if (created.length > 0 && totalPnl !== 0) {

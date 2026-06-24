@@ -14,11 +14,12 @@ export function formatCurrency(
   showSign = true
 ): string {
   const abs = Math.abs(value);
-  const formatted = new Intl.NumberFormat("en-US", {
+  const noDecimals = ["IDR", "JPY"];
+  const formatted = new Intl.NumberFormat(currency === "IDR" ? "id-ID" : "en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: noDecimals.includes(currency) ? 0 : 2,
+    maximumFractionDigits: noDecimals.includes(currency) ? 0 : 2,
   }).format(abs);
 
   if (showSign && value > 0) return `+${formatted}`;

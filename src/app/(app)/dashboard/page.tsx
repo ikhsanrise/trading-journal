@@ -85,12 +85,8 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
     return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
 
-  const fmtPnl = (v: number) => {
-    const abs = Math.abs(v);
-    const sign = v < 0 ? "-" : "+";
-    if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1)}K`;
-    return `${sign}$${abs.toFixed(2)}`;
-  };
+  const cur = data?.account?.currency ?? "USD";
+  const fmtPnl = (v: number) => formatCurrency(v, cur);
 
   return (
     <div className="bg-card border rounded-xl p-3">
@@ -350,7 +346,7 @@ export default function DashboardPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`} />
+                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? 'USD'; const sym = cur === 'IDR' ? 'Rp' : '$'; return v >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
                     <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} />
                     <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={{ r: 3, fill: CURVE_COLOR }} activeDot={{ r: 5 }} />
                   </AreaChart>
@@ -370,7 +366,7 @@ export default function DashboardPage() {
                   <BarChart data={dailyBarData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`} />
+                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? 'USD'; const sym = cur === 'IDR' ? 'Rp' : '$'; return v >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
                     <ReferenceLine y={0} stroke="hsl(var(--border))" />
                     <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Daily P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                     <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>

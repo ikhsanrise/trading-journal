@@ -27,6 +27,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);
   const [accountId, setAccountId] = useState("");
+  const [account, setAccount] = useState<any>(null);
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
@@ -43,6 +44,7 @@ export default function CalendarPage() {
       .then((r) => r.json())
       .then((d) => {
         setCalendarData(d.calendar ?? []);
+        setAccount(d.account ?? null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -137,7 +139,7 @@ export default function CalendarPage() {
                 <div className="text-right">
                   <p className="text-muted-foreground">Monthly P&L</p>
                   <p className={cn("font-semibold", monthPnL > 0 ? "text-[#16a34a]" : monthPnL < 0 ? "text-[#dc2626]" : "")}>
-                    {monthPnL !== 0 ? formatCurrency(monthPnL) : "$0.00"}
+                    {formatCurrency(monthPnL, account?.currency)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -192,9 +194,7 @@ export default function CalendarPage() {
                         {entry && (
                           <>
                             <p className="text-[12px] font-bold leading-tight" style={{ color: c?.text }}>
-                              {Math.abs(entry.pnl) >= 1000
-                                ? `${entry.pnl < 0 ? "-" : "+"}$${(Math.abs(entry.pnl) / 1000).toFixed(2)}K`
-                                : formatCurrency(entry.pnl)}
+                              {formatCurrency(entry.pnl, account?.currency)}
                             </p>
                             <p className="text-[10px] mt-0.5" style={{ color: c?.sub }}>
                               {entry.tradeCount} trade{entry.tradeCount > 1 ? "s" : ""}
@@ -215,8 +215,7 @@ export default function CalendarPage() {
                     <p className="text-[12px] font-bold" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                       {wDays > 0
                         ? (Math.abs(wPnl) >= 1000
-                          ? `${wPnl < 0 ? "-" : "+"}$${(Math.abs(wPnl) / 1000).toFixed(1)}K`
-                          : formatCurrency(wPnl))
+                          formatCurrency(wPnl, account?.currency))
                         : "$0"}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{wDays} {wDays === 1 ? "day" : "days"}</p>
@@ -232,7 +231,7 @@ export default function CalendarPage() {
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold">{year} — Monthly Overview</p>
               <p className={cn("text-xs font-semibold", yearPnL > 0 ? "text-[#16a34a]" : yearPnL < 0 ? "text-[#dc2626]" : "")}>
-                YTD: {formatCurrency(yearPnL)}
+                YTD: {formatCurrency(yearPnL, account?.currency)}
               </p>
             </div>
             <div className="grid grid-cols-12 gap-1.5">
@@ -254,8 +253,7 @@ export default function CalendarPage() {
                       <>
                         <p className="text-[10px] font-bold" style={{ color: c?.text }}>
                           {Math.abs(m.pnl) >= 1000
-                            ? `${m.pnl < 0 ? "-" : ""}$${(Math.abs(m.pnl) / 1000).toFixed(1)}K`
-                            : formatCurrency(m.pnl)}
+                            formatCurrency(m.pnl, account?.currency)}
                         </p>
                         <p className="text-[9px] text-muted-foreground">{m.tradeDays}d</p>
                       </>

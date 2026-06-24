@@ -24,11 +24,11 @@ function PnLPill({ value }: { value: number | null }) {
 }
 
 function OutcomeBadge({ outcome }: { outcome: string | null }) {
-  if (!outcome) return <span className="text-xs text-muted-foreground">Open</span>;
+  if (!outcome) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">Open</span>;
   const map: Record<string, string> = {
-    win: "bg-[#dcfce7] text-[#15803d] border border-[#86efac]",
-    loss: "bg-[#fee2e2] text-[#b91c1c] border border-[#fca5a5]",
-    breakeven: "bg-[#fefce8] text-[#854d0e] border border-[#fde047]",
+    win: "bg-[#dcfce7] text-[#16a34a] dark:bg-[#16a34a]/20",
+    loss: "bg-[#fee2e2] text-[#dc2626] dark:bg-[#dc2626]/20",
+    breakeven: "bg-[#fef9c3] text-[#ca8a04] dark:bg-[#ca8a04]/20",
   };
   const labels: Record<string, string> = { win: "Win", loss: "Loss", breakeven: "B/E" };
   return (

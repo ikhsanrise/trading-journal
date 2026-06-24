@@ -28,6 +28,7 @@ export default function CalendarPage() {
   const [isDark, setIsDark] = useState(false);
   const [accountId, setAccountId] = useState("");
   const [account, setAccount] = useState<any>(null);
+  const [selectedDay, setSelectedDay] = useState<{ date: string; entry: any } | null>(null);
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
@@ -186,21 +187,22 @@ export default function CalendarPage() {
                     const isToday = key === format(new Date(), "yyyy-MM-dd");
                     return (
                       <div key={di}
-                        className="rounded-xl border min-h-[72px] p-2 transition-all"
+                        className={cn("rounded-xl border min-h-[52px] sm:min-h-[72px] p-1 sm:p-2 transition-all", entry ? "cursor-pointer active:scale-95" : "")}
+                        onClick={() => entry && setSelectedDay({ date: key, entry })}
                         style={c
                           ? { background: c.bg, borderColor: c.border }
                           : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))" }
                         }>
-                        <p className={cn("text-[11px] font-medium mb-1", isToday && !c ? "text-indigo-500" : "text-muted-foreground")}>
+                        <p className={cn("text-[10px] font-medium mb-0.5", isToday && !c ? "text-indigo-500" : "text-muted-foreground")}>
                           {format(day, "d")}
                         </p>
                         {entry && (
                           <>
-                            <p className="text-[10px] sm:text-[12px] font-bold leading-tight truncate" style={{ color: c?.text }}>
+                            <p className="text-[9px] sm:text-[11px] font-bold leading-tight truncate" style={{ color: c?.text }}>
                               {formatCurrency(entry.pnl, account?.currency)}
                             </p>
-                            <p className="text-[9px] sm:text-[10px] mt-0.5" style={{ color: c?.sub }}>
-                              {entry.tradeCount} trade{entry.tradeCount > 1 ? "s" : ""}
+                            <p className="text-[8px] sm:text-[9px] mt-0.5 truncate" style={{ color: c?.sub }}>
+                              {entry.tradeCount}t
                             </p>
                           </>
                         )}
@@ -266,6 +268,53 @@ export default function CalendarPage() {
             </div>
           </div>
         </>
+      )}
+      {/* Day detail popup */}
+      {selectedDay && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={() => setSelectedDay(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Trading Day</p>
+                <p className="text-sm font-semibold">{format(new Date(selectedDay.date + "T00:00:00"), "EEEE, d MMMM yyyy")}</p>
+              </div>
+              <button onClick={() => setSelectedDay(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">
+                ✕
+              </button>
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Net P&L</p>
+                <p className={cn("text-sm font-bold", selectedDay.entry.pnl > 0 ? "text-[#16a34a]" : selectedDay.entry.pnl < 0 ? "text-[#dc2626]" : "")}>
+                  {formatCurrency(selectedDay.entry.pnl, account?.currency)}
+                </p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Total Trades</p>
+                <p className="text-sm font-bold">{selectedDay.entry.tradeCount}</p>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className={cn("rounded-xl p-3 text-center", selectedDay.entry.pnl > 0 ? "bg-[#16a34a]/10" : "bg-[#dc2626]/10")}>
+              <p className={cn("text-xs font-semibold", selectedDay.entry.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                {selectedDay.entry.pnl > 0 ? "✓ Profitable Day" : selectedDay.entry.pnl < 0 ? "✗ Loss Day" : "Break Even"}
+              </p>
+            </div>
+
+            <button onClick={() => setSelectedDay(null)}
+              className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

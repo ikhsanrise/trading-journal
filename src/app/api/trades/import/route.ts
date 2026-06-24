@@ -5,24 +5,80 @@ import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
 import { calculateRMultiple, getOutcomeFromR } from "@/lib/utils";
 
-// MT4/MT5 CSV header mapping
-function parseMT4Row(row: any) {
+function parseDate(str: string): Date | null {
+  if (!str || str.trim() === "") return null;
+  // Format: 2026.06.22 06:14:59
+  const dotFmt = str.match(/^(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+  if (dotFmt) return new Date(`${dotFmt[1]}-${dotFmt[2]}-${dotFmt[3]}T${dotFmt[4]}`);
+  return new Date(str);
+}
+
+// Format HFM/MT5: Time,Position,Symbol,Type,Volume,Price,S/L,T/P,Time,Price,Commission,Swap,Profit
+function parseHFMRow(row: any) {
+  const keys = Object.keys(row);
+  // Kolom Time ada 2x, papaparse akan buat Time dan Time_1
+  const entryTime = row["Time"] ?? row["Open Time"] ?? "";
+  const exitTime = row["Time_1"] ?? row["Close Time"] ?? "";
+  const entryPrice = parseFloat(row["Price"] ?? 0);
+  const exitPrice = parseFloat(row["Price_1"] ?? row["Close Price"] ?? 0) || null;
+  const type = (row["Type"] ?? row["type"] ?? "").toLowerCase();
+  const sl = parseFloat(row["S / L"] ?? row["SL"] ?? 0) || null;
+  const tp = parseFloat(row["T / P"] ?? row["TP"] ?? 0) || null;
+  const pnl = parseFloat(row["Profit"] ?? 0);
+  const commission = parseFloat(row["Commission"] ?? 0);
+  const swap = parseFloat(row["Swap"] ?? 0);
+  const lotSize = parseFloat(row["Volume"] ?? row["Size"] ?? 0);
+  const symbol = (row["Symbol"] ?? "").replace(/r$/, ""); // hapus suffix 'r' pada XAUUSDr
+
   return {
-    symbol: row["Symbol"] ?? row["symbol"] ?? "",
-    direction: (row["Type"] ?? row["type"] ?? "").toLowerCase().includes("buy")
-      ? "long"
-      : "short",
-    entryPrice: parseFloat(row["Open Price"] ?? row["Price"] ?? 0),
-    exitPrice: parseFloat(row["Close Price"] ?? row["Close"] ?? 0) || null,
-    stopLoss: parseFloat(row["S / L"] ?? row["SL"] ?? row["Stop Loss"] ?? 0) || null,
-    takeProfit: parseFloat(row["T / P"] ?? row["TP"] ?? row["Take Profit"] ?? 0) || null,
-    lotSize: parseFloat(row["Size"] ?? row["Lots"] ?? row["Volume"] ?? 0),
-    entryDate: row["Open Time"] ?? row["Open Date"] ?? "",
-    exitDate: row["Close Time"] ?? row["Close Date"] ?? "",
-    pnl: parseFloat(row["Profit"] ?? row["P&L"] ?? 0),
+    symbol,
+    direction: type.includes("buy") ? "long" : "short",
+    entryPrice,
+    exitPrice,
+    stopLoss: sl,
+    takeProfit: tp,
+    lotSize,
+    entryDate: entryTime,
+    exitDate: exitTime,
+    pnl,
+    commission,
+    swap,
+    rMultiple: null as number | null,
+    outcome: null as string | null,
+  };
+}
+
+// Format Trading Journal export: Date,Symbol,Direction,Entry Price,Exit Price,...
+function parseJournalRow(row: any) {
+  return {
+    symbol: row["Symbol"] ?? "",
+    direction: (row["Direction"] ?? "long").toLowerCase(),
+    entryPrice: parseFloat(row["Entry Price"] ?? 0),
+    exitPrice: parseFloat(row["Exit Price"] ?? "") || null,
+    stopLoss: parseFloat(row["Stop Loss"] ?? "") || null,
+    takeProfit: parseFloat(row["Take Profit"] ?? "") || null,
+    lotSize: parseFloat(row["Lot Size"] ?? 0),
+    entryDate: row["Entry Date"] ?? row["Date"] ?? "",
+    exitDate: row["Exit Date"] ?? "",
+    pnl: parseFloat(row["P&L"] ?? 0),
     commission: parseFloat(row["Commission"] ?? 0),
     swap: parseFloat(row["Swap"] ?? 0),
+    rMultiple: parseFloat(row["R-Multiple"] ?? "") || null,
+    outcome: row["Outcome"] ?? null,
+    setup: row["Setup"] ?? null,
+    setupCategory: row["Setup Category"] ?? null,
+    session: row["Session"] ?? null,
+    timeframe: row["Timeframe"] ?? null,
+    mood: row["Mood"] ?? null,
+    notes: row["Notes"] ?? null,
+    tags: row["Tags"] ?? null,
   };
+}
+
+function detectFormat(headers: string[]): "hfm" | "journal" | "mt4" {
+  if (headers.includes("Direction") || headers.includes("Entry Price")) return "journal";
+  if (headers.includes("Volume") || headers.includes("Position")) return "hfm";
+  return "mt4";
 }
 
 export async function POST(req: NextRequest) {
@@ -37,14 +93,30 @@ export async function POST(req: NextRequest) {
   if (!file || !accountId)
     return NextResponse.json({ error: "Missing file or accountId" }, { status: 400 });
 
-  // Verify account ownership
   const account = await prisma.tradingAccount.findFirst({
     where: { id: accountId, userId: session.user.id },
   });
   if (!account)
     return NextResponse.json({ error: "Account not found" }, { status: 404 });
 
-  const text = await file.text();
+  let text = await file.text();
+
+  // Skip metadata rows untuk format HFM (baris sebelum "Positions," atau "Time,Position,")
+  const lines = text.split("\n");
+  let dataStart = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (l.startsWith("Time,Position") || l.startsWith("Date,Symbol") || l.startsWith("Symbol,")) {
+      dataStart = i;
+      break;
+    }
+    // Skip baris "Positions,,,,,"
+    if (l.startsWith("Positions,")) {
+      dataStart = i + 1;
+      break;
+    }
+  }
+  text = lines.slice(dataStart).join("\n");
 
   const { data, errors } = Papa.parse(text, {
     header: true,
@@ -52,67 +124,83 @@ export async function POST(req: NextRequest) {
     transformHeader: (h) => h.trim(),
   });
 
-  if (errors.length > 0)
+  if (errors.length > 0 && data.length === 0)
     return NextResponse.json({ error: "CSV parse error", errors }, { status: 400 });
+
+  const headers = data.length > 0 ? Object.keys(data[0] as object) : [];
+  const format = detectFormat(headers);
 
   const created = [];
   const failed = [];
+  let totalPnl = 0;
 
   for (const row of data as any[]) {
     try {
-      const parsed = parseMT4Row(row);
+      const parsed = format === "journal" ? parseJournalRow(row) : parseHFMRow(row);
+
       if (!parsed.symbol || !parsed.lotSize) continue;
+      // Skip baris summary/total di HFM
+      if (parsed.symbol === "" || isNaN(parsed.entryPrice) || parsed.entryPrice === 0) continue;
 
-      let rMultiple = null;
-      let outcome = null;
-      const status = parsed.exitDate ? "closed" : "open";
+      const status = parsed.exitDate && parsed.exitDate.trim() !== "" ? "closed" : "open";
 
-      if (parsed.exitPrice && parsed.stopLoss) {
+      let rMultiple = parsed.rMultiple;
+      let outcome = parsed.outcome;
+
+      if (!rMultiple && parsed.exitPrice && parsed.stopLoss) {
         rMultiple = calculateRMultiple(
           parsed.direction,
           parsed.entryPrice,
           parsed.exitPrice,
           parsed.stopLoss
         );
-        outcome = getOutcomeFromR(rMultiple);
-      } else if (parsed.pnl !== null && parsed.pnl !== 0) {
-        outcome = parsed.pnl > 0 ? "win" : "loss";
+      }
+      if (!outcome) {
+        if (rMultiple !== null) outcome = getOutcomeFromR(rMultiple);
+        else if (parsed.pnl > 0) outcome = "win";
+        else if (parsed.pnl < 0) outcome = "loss";
       }
 
-      const trade = await prisma.trade.create({
-        data: {
-          accountId,
-          symbol: parsed.symbol.toUpperCase(),
-          direction: parsed.direction,
-          entryPrice: parsed.entryPrice,
-          exitPrice: parsed.exitPrice,
-          stopLoss: parsed.stopLoss,
-          takeProfit: parsed.takeProfit,
-          lotSize: parsed.lotSize,
-          entryDate: parsed.entryDate
-            ? new Date(parsed.entryDate)
-            : new Date(),
-          exitDate: parsed.exitDate ? new Date(parsed.exitDate) : null,
-          commission: parsed.commission,
-          swap: parsed.swap,
-          pnl: parsed.pnl,
-          rMultiple,
-          status,
-          outcome,
-        },
-      });
-      created.push(trade.id);
+      const entryDate = parseDate(parsed.entryDate) ?? new Date();
+      const exitDate = parsed.exitDate ? parseDate(parsed.exitDate) : null;
+
+      const tradeData: any = {
+        accountId,
+        symbol: parsed.symbol.toUpperCase(),
+        direction: parsed.direction,
+        entryPrice: parsed.entryPrice,
+        exitPrice: parsed.exitPrice,
+        stopLoss: parsed.stopLoss,
+        takeProfit: parsed.takeProfit,
+        lotSize: parsed.lotSize,
+        entryDate,
+        exitDate,
+        commission: parsed.commission || 0,
+        swap: parsed.swap || 0,
+        pnl: parsed.pnl || 0,
+        rMultiple,
+        status,
+        outcome,
+      };
+
+      // Extra fields untuk format journal
+      if (format === "journal") {
+        if ((parsed as any).session) tradeData.session = (parsed as any).session;
+        if ((parsed as any).timeframe) tradeData.timeframe = (parsed as any).timeframe;
+        if ((parsed as any).mood) tradeData.mood = (parsed as any).mood;
+        if ((parsed as any).notes) tradeData.notes = (parsed as any).notes;
+        if ((parsed as any).setupCategory) tradeData.setupCategory = (parsed as any).setupCategory;
+      }
+
+      await prisma.trade.create({ data: tradeData });
+      created.push(parsed.symbol);
+      totalPnl += parsed.pnl || 0;
     } catch (e) {
-      failed.push({ row, error: String(e) });
+      failed.push({ error: String(e) });
     }
   }
 
-  // Update account balance
-  if (created.length > 0) {
-    const totalPnl = (data as any[]).reduce(
-      (s, r) => s + parseFloat(r["Profit"] ?? r["P&L"] ?? 0),
-      0
-    );
+  if (created.length > 0 && totalPnl !== 0) {
     await prisma.tradingAccount.update({
       where: { id: accountId },
       data: { currentBalance: { increment: totalPnl } },
@@ -122,6 +210,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     imported: created.length,
     failed: failed.length,
-    errors: failed,
+    errors: failed.slice(0, 5),
+    format,
   });
 }

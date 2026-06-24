@@ -178,6 +178,9 @@ export default function DashboardPage() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [accountOpen, setAccountOpen] = useState(false);
   const [equityView, setEquityView] = useState<"daily"|"weekly"|"monthly">("daily");
+  const [goalInput, setGoalInput] = useState("");
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [savingGoal, setSavingGoal] = useState(false);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -235,6 +238,49 @@ export default function DashboardPage() {
   };
 
   const cumulativeCurve = aggregateEquity(equityView);
+
+  // Earnings stats
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
+
+  const sumPnl = (from: string, to?: string) => calendar
+    .filter((d: any) => d.date >= from && (!to || d.date <= (to ?? todayStr)))
+    .reduce((s: number, d: any) => s + d.pnl, 0);
+
+  const todayPnl = sumPnl(todayStr);
+  const weekPnl = sumPnl(weekStartStr);
+  const monthPnl = sumPnl(monthStart);
+
+  // Prev period for % change
+  const prevDayStr = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+  const prevWeekStart = new Date(weekStart.getTime() - 7 * 86400000).toISOString().slice(0, 10);
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
+
+  const prevDayPnl = sumPnl(prevDayStr, prevDayStr);
+  const prevWeekPnl = sumPnl(prevWeekStart, new Date(weekStart.getTime() - 1).toISOString().slice(0, 10));
+  const prevMonthPnl = sumPnl(prevMonthStart, prevMonthEnd);
+
+  const pctChange = (cur: number, prev: number) => prev === 0 ? null : ((cur - prev) / Math.abs(prev)) * 100;
+
+  const monthlyGoal = data?.account?.monthlyGoal ?? 0;
+  const goalPct = monthlyGoal > 0 ? Math.min(100, (monthPnl / monthlyGoal) * 100) : 0;
+
+  async function saveGoal() {
+    if (!data?.account?.id) return;
+    setSavingGoal(true);
+    await fetch(\`/api/accounts/\${data.account.id}\`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ monthlyGoal: parseFloat(goalInput) || 0 }),
+    });
+    setSavingGoal(false);
+    setEditingGoal(false);
+    fetchData();
+  }
 
   const dailyBarData = calendar
     .slice()
@@ -348,6 +394,92 @@ export default function DashboardPage() {
             <StatCard label="Avg Loss" value={stats?.avgLoss != null ? formatCurrency(stats.avgLoss, data?.account?.currency) : "—"} sub="per losing trade" color="text-[#dc2626]" />
             <StatCard label="Avg Trade Duration" value={avgDuration ?? "—"} sub="across recent trades" />
             <StatCard label="Current Streak" value={stats?.streak ? `${stats.streak.current} ${stats.streak.type === 'win' ? '🔥' : '❄️'}` : "—"} sub={stats?.streak ? `Max win: ${stats.streak.maxWin} · Max loss: ${stats.streak.maxLoss}` : undefined} color={stats?.streak?.type === 'win' ? 'text-[#16a34a]' : 'text-[#dc2626]'} />
+          </div>
+
+          {/* Earnings + Monthly Goal */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Earnings Card */}
+            <div className="bg-card border rounded-xl p-4">
+              <p className="text-xs font-semibold mb-3">Earnings</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Today", pnl: todayPnl, prev: prevDayPnl },
+                  { label: "This Week", pnl: weekPnl, prev: prevWeekPnl },
+                  { label: "This Month", pnl: monthPnl, prev: prevMonthPnl },
+                ].map(({ label, pnl, prev }) => {
+                  const pct = pctChange(pnl, prev);
+                  return (
+                    <div key={label} className="bg-muted/40 rounded-lg p-3">
+                      <p className="text-[10px] text-muted-foreground mb-1">{label}</p>
+                      <p className={`text-xs font-bold ${pnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                        {formatCurrency(pnl, data?.account?.currency)}
+                      </p>
+                      {pct !== null && (
+                        <p className={`text-[10px] mt-0.5 font-medium ${pct >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                          {pct >= 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}% vs prev
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Monthly Goal Card */}
+            <div className="bg-card border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold">Monthly Profit Goal</p>
+                <button onClick={() => { setEditingGoal(true); setGoalInput(String(monthlyGoal || "")); }}
+                  className="text-[10px] text-indigo-500 hover:underline">
+                  {monthlyGoal > 0 ? "Edit" : "Set Goal"}
+                </button>
+              </div>
+              {editingGoal ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="number"
+                    value={goalInput}
+                    onChange={e => setGoalInput(e.target.value)}
+                    placeholder="e.g. 10000000"
+                    className="flex-1 text-xs border rounded-lg px-2 py-1.5 bg-background"
+                  />
+                  <button onClick={saveGoal} disabled={savingGoal}
+                    className="text-[10px] px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                    {savingGoal ? "..." : "Save"}
+                  </button>
+                  <button onClick={() => setEditingGoal(false)} className="text-[10px] text-muted-foreground hover:text-foreground">Cancel</button>
+                </div>
+              ) : monthlyGoal > 0 ? (
+                <div className="flex flex-col items-center">
+                  {/* Gauge setengah lingkaran */}
+                  <div className="relative w-40 h-20 mt-1">
+                    <svg viewBox="0 0 160 80" className="w-full h-full">
+                      <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" strokeLinecap="round" />
+                      <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none"
+                        stroke={goalPct >= 100 ? "#16a34a" : goalPct >= 50 ? "#6366f1" : "#f59e0b"}
+                        strokeWidth="12" strokeLinecap="round"
+                        strokeDasharray={`${goalPct * 2.198} 219.8`}
+                      />
+                      <text x="80" y="72" textAnchor="middle" fontSize="16" fontWeight="bold"
+                        fill={goalPct >= 100 ? "#16a34a" : "hsl(var(--foreground))"}>
+                        {goalPct.toFixed(0)}%
+                      </text>
+                    </svg>
+                  </div>
+                  <div className="flex justify-between w-full text-[10px] text-muted-foreground mt-1">
+                    <span>{formatCurrency(monthPnl, data?.account?.currency)}</span>
+                    <span>Goal: {formatCurrency(monthlyGoal, data?.account?.currency, false)}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {goalPct >= 100 ? "🎉 Goal achieved!" : `${formatCurrency(monthlyGoal - monthPnl, data?.account?.currency, false)} remaining`}
+                  </p>
+                </div>
+              ) : (
+                <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">
+                  Set a monthly profit goal to track your progress
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Charts */}

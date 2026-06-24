@@ -59,6 +59,7 @@ model TradingAccount {
   currentBalance Float
   assetClass     String   @default("forex")
   isDefault      Boolean  @default(false)
+  monthlyGoal    Float?   @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   trades         Trade[]

@@ -251,8 +251,7 @@ export default function CalendarPage() {
                     {m.tradeDays > 0 ? (
                       <>
                         <p className="text-[10px] font-bold" style={{ color: c?.text }}>
-                          {Math.abs(m.pnl) >= 1000
-                            formatCurrency(m.pnl, account?.currency)}
+                          {formatCurrency(m.pnl, account?.currency)}
                         </p>
                         <p className="text-[9px] text-muted-foreground">{m.tradeDays}d</p>
                       </>

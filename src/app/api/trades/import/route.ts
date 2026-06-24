@@ -162,9 +162,11 @@ export async function POST(req: NextRequest) {
         );
       }
       if (!outcome) {
-        if (rMultiple !== null) outcome = getOutcomeFromR(rMultiple);
-        else if (parsed.pnl > 0) outcome = "win";
+        // Prioritas: pakai PnL untuk outcome (lebih reliable dari rMultiple saat SL tidak ada)
+        if (parsed.pnl > 0) outcome = "win";
         else if (parsed.pnl < 0) outcome = "loss";
+        else if (rMultiple !== null && rMultiple !== 0) outcome = getOutcomeFromR(rMultiple);
+        else if (status === "closed") outcome = "breakeven";
       }
 
       const entryDate = parseDate(parsed.entryDate) ?? new Date();

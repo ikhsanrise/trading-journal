@@ -22,6 +22,7 @@ function ExportCard({ icon: Icon, title, desc, ext, onClick, loading }: any) {
 }
 
 const EMPTY_FORM = { name: "", broker: "", currency: "USD", assetClass: "forex", initialBalance: "" };
+const CURRENCIES = ["USD", "IDR", "EUR", "GBP", "JPY", "SGD", "AUD"];
 
 export default function SettingsPage() {
   const [account, setAccount] = useState<any>(null);
@@ -135,7 +136,7 @@ export default function SettingsPage() {
                   onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
                   className="w-full mt-0.5 px-2 py-1.5 text-xs bg-background border rounded-lg focus:outline-none focus:border-indigo-400"
                 >
-                  <option>USD</option>
+                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                   <option>EUR</option>
                   <option>GBP</option>
                   <option>IDR</option>

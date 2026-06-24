@@ -217,7 +217,7 @@ export default function DashboardPage() {
   // Aggregate equity curve by view
   const aggregateEquity = (view: "daily"|"weekly"|"monthly") => {
     if (!rawCurve.length) return [];
-    if (view === "daily") return rawCurve.map(p => ({ ...p, date: p.date.slice(5) }));
+    if (view === "daily") return rawCurve.map((p: any) => ({ ...p, date: p.date.slice(5) }));
     const map = new Map<string, number>();
     for (const p of rawCurve) {
       const d = new Date(p.date);

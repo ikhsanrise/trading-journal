@@ -272,7 +272,7 @@ export default function DashboardPage() {
   async function saveGoal() {
     if (!data?.account?.id) return;
     setSavingGoal(true);
-    await fetch(\`/api/accounts/\${data.account.id}\`, {
+    await fetch(`/api/accounts/${data.account.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ monthlyGoal: parseFloat(goalInput) || 0 }),

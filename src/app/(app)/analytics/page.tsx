@@ -100,6 +100,13 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [accountId, setAccountId] = useState("");
 
+  // Load default account on mount
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then(r => r.json())
+      .then(d => { if (d.account?.id) setAccountId(d.account.id); });
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     setData(null);

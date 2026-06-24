@@ -42,7 +42,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
   );
 }
 
-function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
+function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; currency?: string }) {
   const [current, setCurrent] = useState(new Date());
   const dataMap = new Map(calendarData.map((d) => [d.date, d]));
 
@@ -85,8 +85,7 @@ function CalendarHeatmap({ calendarData }: { calendarData: any[] }) {
     return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
 
-  const cur = data?.account?.currency ?? "USD";
-  const fmtPnl = (v: number) => formatCurrency(v, cur);
+  const fmtPnl = (v: number) => formatCurrency(v, currency ?? "USD");
 
   return (
     <div className="bg-card border rounded-xl p-3">

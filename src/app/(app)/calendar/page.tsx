@@ -188,7 +188,9 @@ export default function CalendarPage() {
                     return (
                       <div key={di}
                         className={cn("rounded-xl border min-h-[52px] sm:min-h-[72px] p-1 sm:p-2 transition-all", entry ? "cursor-pointer active:scale-95" : "")}
-                        onClick={() => entry && setSelectedDay({ date: key, entry })}
+                        role={entry ? "button" : undefined}
+                        tabIndex={entry ? 0 : undefined}
+                        onClick={() => { if (entry) setSelectedDay({ date: key, entry }); }}
                         style={c
                           ? { background: c.bg, borderColor: c.border }
                           : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))" }

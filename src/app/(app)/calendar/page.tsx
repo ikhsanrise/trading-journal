@@ -30,6 +30,7 @@ export default function CalendarPage() {
   const [account, setAccount] = useState<any>(null);
   const [selectedDay, setSelectedDay] = useState<{ date: string; entry: any } | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<{ week: number; pnl: number; days: number; count: number } | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<{ name: string; pnl: number; days: number } | null>(null);
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
@@ -250,8 +251,11 @@ export default function CalendarPage() {
                 return (
                   <button
                     key={m.name}
-                    onClick={() => setCurrent(new Date(year, i, 1))}
-                    className="rounded-lg border p-2 text-center transition-all hover:border-indigo-400"
+                    onClick={() => {
+                      setCurrent(new Date(year, i, 1));
+                      if (m.tradeDays > 0) setSelectedMonth({ name: m.name, pnl: m.pnl, days: m.tradeDays });
+                    }}
+                    className="rounded-lg border p-2 text-center transition-all hover:border-indigo-400 overflow-hidden"
                     style={c
                       ? { background: c.bg, borderColor: isCurrent ? "#6366f1" : c.border }
                       : { borderColor: isCurrent ? "#6366f1" : "hsl(var(--border))" }
@@ -260,10 +264,10 @@ export default function CalendarPage() {
                     <p className="text-[10px] text-muted-foreground mb-1">{m.name}</p>
                     {m.tradeDays > 0 ? (
                       <>
-                        <p className="text-[10px] font-bold" style={{ color: c?.text }}>
-                          {formatCurrency(m.pnl, account?.currency)}
+                        <p className="text-[9px] font-bold truncate" style={{ color: c?.text }}>
+                          {m.pnl >= 0 ? "+" : ""}{(m.pnl / 1000000).toFixed(1)}M
                         </p>
-                        <p className="text-[9px] text-muted-foreground">{m.tradeDays}d</p>
+                        <p className="text-[8px] text-muted-foreground">{m.tradeDays}d</p>
                       </>
                     ) : (
                       <p className="text-[10px] text-muted-foreground">—</p>
@@ -275,6 +279,40 @@ export default function CalendarPage() {
           </div>
         </>
       )}
+      {/* Month detail popup */}
+      {selectedMonth && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedMonth(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{year}</p>
+                <p className="text-sm font-semibold">{selectedMonth.name}</p>
+              </div>
+              <button onClick={() => setSelectedMonth(null)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Net P&L</p>
+                <p className={cn("text-sm font-bold", selectedMonth.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                  {formatCurrency(selectedMonth.pnl, account?.currency)}
+                </p>
+              </div>
+              <div className="bg-muted/40 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Trade Days</p>
+                <p className="text-sm font-bold">{selectedMonth.days}</p>
+              </div>
+            </div>
+            <div className={cn("rounded-xl p-3 text-center", selectedMonth.pnl > 0 ? "bg-[#16a34a]/10" : "bg-[#dc2626]/10")}>
+              <p className={cn("text-xs font-semibold", selectedMonth.pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
+                {selectedMonth.pnl > 0 ? "✓ Profitable Month" : "✗ Loss Month"}
+              </p>
+            </div>
+            <button onClick={() => setSelectedMonth(null)} className="w-full mt-3 py-2 text-xs text-muted-foreground">Close</button>
+          </div>
+        </div>
+      )}
+
       {/* Week detail popup */}
       {selectedWeek && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"

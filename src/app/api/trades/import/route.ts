@@ -247,8 +247,8 @@ export async function POST(req: NextRequest) {
     failed: failed.length,
     errors: failed.slice(0, 5),
     format,
-    transactions: txToCreate.length,
-    depositTotal,
-    withdrawTotal,
+    transactions: 0,
+    depositTotal: 0,
+    withdrawTotal: 0,
   });
 }

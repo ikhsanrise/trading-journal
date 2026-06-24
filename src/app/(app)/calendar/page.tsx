@@ -117,28 +117,31 @@ export default function CalendarPage() {
           {/* Monthly calendar */}
           <div className="bg-card border rounded-xl p-4">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <button onClick={() => setCurrent(subMonths(current, 1))}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted border transition-colors">
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-sm font-semibold min-w-[130px] text-center">{format(current, "MMMM yyyy")}</span>
-                <button onClick={() => setCurrent(addMonths(current, 1))}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted border transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+            <div className="flex flex-col gap-3 mb-4">
+              {/* Nav row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setCurrent(subMonths(current, 1))}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted border transition-colors">
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-sm font-semibold min-w-[110px] text-center">{format(current, "MMMM yyyy")}</span>
+                  <button onClick={() => setCurrent(addMonths(current, 1))}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted border transition-colors">
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <button onClick={() => setCurrent(new Date())}
                   className="text-[11px] px-2.5 py-1 rounded-lg border text-muted-foreground hover:bg-muted transition-colors">
                   This month
                 </button>
               </div>
 
-              {/* Monthly stats */}
-              <div className="flex items-center gap-2 flex-wrap text-xs">
-                <div className="text-right">
-                  <p className="text-muted-foreground">Monthly P&L</p>
-                  <p className={cn("font-semibold", monthPnL > 0 ? "text-[#16a34a]" : monthPnL < 0 ? "text-[#dc2626]" : "")}>
+              {/* Monthly stats row - horizontal scroll */}
+              <div className="flex items-center gap-3 overflow-x-auto pb-1 text-xs">
+                <div className="shrink-0 bg-muted/40 rounded-lg px-3 py-1.5 text-center">
+                  <p className="text-[10px] text-muted-foreground">Monthly P&L</p>
+                  <p className={cn("text-xs font-semibold", monthPnL > 0 ? "text-[#16a34a]" : monthPnL < 0 ? "text-[#dc2626]" : "")}>
                     {formatCurrency(monthPnL, account?.currency)}
                   </p>
                 </div>
@@ -150,9 +153,9 @@ export default function CalendarPage() {
                   <p className="text-muted-foreground">Total Trades</p>
                   <p className="font-semibold">{monthTradeCount}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-muted-foreground">Win / Loss Days</p>
-                  <p className="font-semibold">
+                <div className="shrink-0 bg-muted/40 rounded-lg px-3 py-1.5 text-center">
+                  <p className="text-[10px] text-muted-foreground">Win/Loss</p>
+                  <p className="text-xs font-semibold">
                     <span className="text-[#16a34a]">{monthWinDays}W</span>
                     {" · "}
                     <span className="text-[#dc2626]">{monthLossDays}L</span>
@@ -193,10 +196,10 @@ export default function CalendarPage() {
                         </p>
                         {entry && (
                           <>
-                            <p className="text-[12px] font-bold leading-tight" style={{ color: c?.text }}>
+                            <p className="text-[10px] sm:text-[12px] font-bold leading-tight truncate" style={{ color: c?.text }}>
                               {formatCurrency(entry.pnl, account?.currency)}
                             </p>
-                            <p className="text-[10px] mt-0.5" style={{ color: c?.sub }}>
+                            <p className="text-[9px] sm:text-[10px] mt-0.5" style={{ color: c?.sub }}>
                               {entry.tradeCount} trade{entry.tradeCount > 1 ? "s" : ""}
                             </p>
                           </>
@@ -206,19 +209,18 @@ export default function CalendarPage() {
                   })}
 
                   {/* Week summary */}
-                  <div className="rounded-xl border min-h-[56px] sm:min-h-[72px] p-1 sm:p-2 flex flex-col justify-center"
+                  <div className="rounded-xl border min-h-[52px] sm:min-h-[72px] p-1 sm:p-2 flex flex-col justify-center overflow-hidden"
                     style={wColors
                       ? { background: wColors.bg, borderColor: wColors.border }
                       : { borderColor: "hsl(var(--border))" }
                     }>
-                    <p className="text-[10px] text-muted-foreground">Week {wi + 1}</p>
-                    <p className="text-[12px] font-bold" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
+                    <p className="text-[9px] text-muted-foreground">Wk{wi + 1}</p>
+                    <p className="text-[10px] sm:text-[12px] font-bold truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
                       {wDays > 0
                         ? formatCurrency(wPnl, account?.currency)
-                        : "$0"}
+                        : <span className="text-muted-foreground">—</span>}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">{wDays} {wDays === 1 ? "day" : "days"}</p>
-                    {wCount > 0 && <p className="text-[10px] text-muted-foreground">{wCount} trades</p>}
+                    <p className="text-[9px] text-muted-foreground">{wDays}d · {wCount}t</p>
                   </div>
                 </div>
               );

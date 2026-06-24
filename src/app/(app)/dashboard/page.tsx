@@ -454,16 +454,22 @@ export default function DashboardPage() {
                   {/* Gauge setengah lingkaran */}
                   <div className="relative w-40 h-20 mt-1">
                     <svg viewBox="0 0 160 80" className="w-full h-full">
-                      <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" strokeLinecap="round" />
+                      {/* Track */}
+                      <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke="hsl(var(--muted))" strokeWidth="14" strokeLinecap="round" />
+                      {/* Fill */}
                       <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none"
-                        stroke={goalPct >= 100 ? "#16a34a" : goalPct >= 50 ? "#6366f1" : "#f59e0b"}
-                        strokeWidth="12" strokeLinecap="round"
-                        strokeDasharray={`${goalPct * 2.198} 219.8`}
+                        stroke={goalPct >= 100 ? "#16a34a" : goalPct >= 70 ? "#6366f1" : goalPct >= 40 ? "#818cf8" : "#a5b4fc"}
+                        strokeWidth="14" strokeLinecap="round"
+                        strokeDasharray={`${Math.min(goalPct, 100) * 2.198} 219.8`}
+                        style={{ transition: "stroke-dasharray 0.6s ease" }}
                       />
-                      <text x="80" y="72" textAnchor="middle" fontSize="16" fontWeight="bold"
-                        fill={goalPct >= 100 ? "#16a34a" : "hsl(var(--foreground))"}>
+                      {/* Percentage text */}
+                      <text x="80" y="68" textAnchor="middle" fontSize="18" fontWeight="bold"
+                        fill={goalPct >= 100 ? "#16a34a" : goalPct >= 70 ? "#6366f1" : "hsl(var(--foreground))"}>
                         {goalPct.toFixed(0)}%
                       </text>
+                      <text x="80" y="80" textAnchor="middle" fontSize="8"
+                        fill="hsl(var(--muted-foreground))">of goal</text>
                     </svg>
                   </div>
                   <div className="flex justify-between w-full text-[10px] text-muted-foreground mt-1">

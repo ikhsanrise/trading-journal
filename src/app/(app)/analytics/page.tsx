@@ -100,13 +100,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [accountId, setAccountId] = useState("");
 
-useEffect(() => {
-  fetch("/api/dashboard")
-    .then(r => r.json())
-    .then(d => { if (d.account?.id) setAccountId(d.account.id); });
-}, []);
-
-  // Load default account on mount
+// Load default account on mount
   useEffect(() => {
     fetch("/api/dashboard")
       .then(r => r.json())
@@ -114,22 +108,36 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
+    if (!accountId) return;
     setLoading(true);
     setData(null);
-    fetch(`/api/analytics${accountId ? `?accountId=${accountId}` : ""}`)
+    fetch(`/api/analytics?accountId=${accountId}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [accountId]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">Loading analytics...</div>
+  const header = (
+    <div className="flex items-center gap-2 p-4 pb-0">
+      <span className="text-sm font-semibold">Analytics</span>
+      <AccountSwitcher value={accountId} onChange={setAccountId} />
+    </div>
+  );
+
+  if (loading || !accountId) return (
+    <div>
+      {header}
+      <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">Loading analytics...</div>
+    </div>
   );
 
   if (!data || data.totalTrades === 0) return (
-    <div className="p-4 flex flex-col items-center justify-center h-64 text-center">
-      <p className="text-sm font-medium mb-1">No data yet</p>
-      <p className="text-xs text-muted-foreground">Add and close some trades to see analytics</p>
+    <div>
+      {header}
+      <div className="p-4 flex flex-col items-center justify-center h-64 text-center">
+        <p className="text-sm font-medium mb-1">No data yet</p>
+        <p className="text-xs text-muted-foreground">Add and close some trades to see analytics</p>
+      </div>
     </div>
   );
 
@@ -145,12 +153,11 @@ useEffect(() => {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold">Analytics</span>
-        <AccountSwitcher value={accountId} onChange={setAccountId} />
-      </div>
       <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold">Analytics</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">Analytics</span>
+          <AccountSwitcher value={accountId} onChange={setAccountId} />
+        </div>
         <span className="text-xs text-muted-foreground">{data.totalTrades} total trades</span>
       </div>
 

@@ -75,6 +75,23 @@ function parseJournalRow(row: any) {
   };
 }
 
+function detectSession(dateGMT0: Date): string {
+  // Convert GMT+0 ke WIB (GMT+7)
+  const wib = new Date(dateGMT0.getTime() + 7 * 60 * 60 * 1000);
+  const hour = wib.getUTCHours(); // jam dalam WIB
+
+  // Session dalam WIB:
+  // Sydney:   05:00 - 07:00
+  // Asia:     07:00 - 16:00
+  // London:   16:00 - 00:00 (sampai tengah malam)
+  // New York: 20:00 - 04:00 (overlap London 20:00-00:00)
+  if (hour >= 20 || hour < 4) return "newyork";
+  if (hour >= 16) return "london";
+  if (hour >= 7) return "asia";
+  if (hour >= 5) return "sydney";
+  return "newyork"; // 04:00-05:00 masih NY close
+}
+
 function parseNum(val: any): number {
   if (val == null) return 0;
   const str = String(val).trim();
@@ -176,6 +193,11 @@ export async function POST(req: NextRequest) {
       const entryDate = parseDate(parsed.entryDate) ?? new Date();
       const exitDate = parsed.exitDate ? parseDate(parsed.exitDate) : null;
 
+      // Detect session dari entryDate (GMT+0 dari HFM)
+      const detectedSession = (format === "hfm")
+        ? detectSession(entryDate)
+        : ((parsed as any).session ?? null);
+
       const tradeData: any = {
         accountId,
         symbol: parsed.symbol.toUpperCase(),
@@ -193,6 +215,7 @@ export async function POST(req: NextRequest) {
         rMultiple,
         status,
         outcome,
+        session: detectedSession,
       };
 
       // Extra fields untuk format journal

@@ -162,7 +162,7 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
               style={wColors ? { background: wColors.bg, borderColor: wColors.border, cursor: wDays > 0 ? "pointer" : "default" } : { borderColor: "hsl(var(--border))", cursor: wDays > 0 ? "pointer" : "default" }}>
               <p className="text-[7px] md:text-[10px] text-muted-foreground leading-none">W{wi + 1}</p>
               <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
-                {wDays > 0 ? fmtPnl(wPnl) : "$0"}
+                {fmtPnl(wDays > 0 ? wPnl : 0)}
               </p>
               {wTrades > 0 && (
                 <p className="text-[6px] md:text-[9px] leading-none" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))", opacity: 0.7 }}>

@@ -60,9 +60,12 @@ model TradingAccount {
   assetClass     String   @default("forex")
   isDefault      Boolean  @default(false)
   monthlyGoal    Float?   @default(0)
+  totalDeposit   Float    @default(0)
+  totalWithdraw  Float    @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   trades         Trade[]
+  transactions   Transaction[]
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -97,6 +100,16 @@ model Trade {
   setupCategory    String?
   account          TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   setup            Setup?         @relation(fields: [setupId], references: [id])
+}
+
+model Transaction {
+  id          String         @id @default(cuid())
+  accountId   String
+  type        String         // "deposit" | "withdraw"
+  amount      Float
+  note        String?
+  date        DateTime       @default(now())
+  account     TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 }
 
 model Setup {

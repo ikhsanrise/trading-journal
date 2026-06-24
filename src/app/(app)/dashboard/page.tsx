@@ -256,6 +256,13 @@ export default function DashboardPage() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [equityView, setEquityView] = useState<"daily"|"weekly"|"monthly">("daily");
   const [goalInput, setGoalInput] = useState("");
+  const [showTxModal, setShowTxModal] = useState(false);
+  const [txType, setTxType] = useState<"deposit"|"withdraw">("deposit");
+  const [txAmount, setTxAmount] = useState("");
+  const [txNote, setTxNote] = useState("");
+  const [txDate, setTxDate] = useState("");
+  const [txList, setTxList] = useState<any[]>([]);
+  const [savingTx, setSavingTx] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
 
@@ -270,6 +277,9 @@ export default function DashboardPage() {
   }, [period, selectedAccountId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (data?.account?.id) fetchTransactions(data.account.id);
+  }, [data?.account?.id]);
 
   const stats = data?.stats;
   const equityCurve = data?.equityCurve ?? [];
@@ -345,6 +355,41 @@ export default function DashboardPage() {
 
   const monthlyGoal = data?.account?.monthlyGoal ?? 0;
   const goalPct = monthlyGoal > 0 ? Math.min(100, (monthPnl / monthlyGoal) * 100) : 0;
+
+  async function fetchTransactions(accId: string) {
+    const res = await fetch(`/api/transactions?accountId=${accId}`);
+    const d = await res.json();
+    setTxList(Array.isArray(d) ? d : []);
+  }
+
+  async function saveTx() {
+    if (!data?.account?.id || !txAmount) return;
+    setSavingTx(true);
+    await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accountId: data.account.id,
+        type: txType,
+        amount: parseFloat(txAmount.replace(/[^0-9.]/g, "")),
+        note: txNote,
+        date: txDate || undefined,
+      }),
+    });
+    setSavingTx(false);
+    setTxAmount("");
+    setTxNote("");
+    setTxDate("");
+    setShowTxModal(false);
+    fetchData();
+    fetchTransactions(data.account.id);
+  }
+
+  async function deleteTx(id: string) {
+    await fetch(`/api/transactions?id=${id}`, { method: "DELETE" });
+    if (data?.account?.id) fetchTransactions(data.account.id);
+    fetchData();
+  }
 
   async function saveGoal() {
     if (!data?.account?.id) return;
@@ -575,6 +620,99 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          {/* Deposit & Withdraw Card */}
+          <div className="bg-card border rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold">Deposit & Withdraw</p>
+              <button onClick={() => setShowTxModal(true)}
+                className="text-[10px] px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                + Add
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-[#16a34a]/10 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Total Deposit</p>
+                <p className="text-sm font-bold text-[#16a34a]">
+                  {formatCurrency(data?.account?.totalDeposit ?? 0, data?.account?.currency, false)}
+                </p>
+              </div>
+              <div className="bg-[#dc2626]/10 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">Total Withdraw</p>
+                <p className="text-sm font-bold text-[#dc2626]">
+                  {formatCurrency(data?.account?.totalWithdraw ?? 0, data?.account?.currency, false)}
+                </p>
+              </div>
+            </div>
+            {/* Transaction history */}
+            {txList.length > 0 && (
+              <div className="space-y-1 max-h-36 overflow-y-auto">
+                {txList.slice(0, 5).map((tx: any) => (
+                  <div key={tx.id} className="flex items-center justify-between py-1.5 border-b last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${tx.type === "deposit" ? "bg-[#16a34a]/20 text-[#16a34a]" : "bg-[#dc2626]/20 text-[#dc2626]"}`}>
+                        {tx.type === "deposit" ? "DEP" : "WDR"}
+                      </span>
+                      <div>
+                        <p className="text-[10px] font-medium">{formatCurrency(tx.amount, data?.account?.currency, false)}</p>
+                        {tx.note && <p className="text-[9px] text-muted-foreground">{tx.note}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[9px] text-muted-foreground">{new Date(tx.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}</p>
+                      <button onClick={() => deleteTx(tx.id)} className="text-muted-foreground hover:text-[#dc2626] transition-colors text-[10px]">✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {txList.length === 0 && (
+              <p className="text-[11px] text-muted-foreground text-center py-2">No transactions yet</p>
+            )}
+          </div>
+
+          {/* Add Transaction Modal */}
+          {showTxModal && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowTxModal(false)}>
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+              <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-semibold">Add Transaction</p>
+                  <button onClick={() => setShowTxModal(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">✕</button>
+                </div>
+                {/* Type selector */}
+                <div className="flex gap-2 mb-4">
+                  {(["deposit", "withdraw"] as const).map(t => (
+                    <button key={t} onClick={() => setTxType(t)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors capitalize ${txType === t ? t === "deposit" ? "bg-[#16a34a] text-white" : "bg-[#dc2626] text-white" : "bg-muted text-muted-foreground"}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Amount ({data?.account?.currency})</label>
+                    <input type="number" value={txAmount} onChange={e => setTxAmount(e.target.value)}
+                      placeholder="0" className="w-full mt-1 text-sm border rounded-xl px-3 py-2 bg-background" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Note (optional)</label>
+                    <input type="text" value={txNote} onChange={e => setTxNote(e.target.value)}
+                      placeholder="e.g. Initial deposit" className="w-full mt-1 text-xs border rounded-xl px-3 py-2 bg-background" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Date (optional)</label>
+                    <input type="date" value={txDate} onChange={e => setTxDate(e.target.value)}
+                      className="w-full mt-1 text-xs border rounded-xl px-3 py-2 bg-background" />
+                  </div>
+                </div>
+                <button onClick={saveTx} disabled={savingTx || !txAmount}
+                  className="w-full mt-4 py-2.5 bg-indigo-600 text-white text-xs font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                  {savingTx ? "Saving..." : `Add ${txType}`}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Charts */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

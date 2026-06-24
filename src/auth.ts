@@ -36,9 +36,10 @@ export const authOptions = {
           if (!user) return null;
           if (!user.password) return null;
           
-          // Direct string comparison
-          const match = user.password === credentials.password;
-          if (!match) return null;
+// Bcrypt comparison
+const bcrypt = require('bcryptjs');
+const match = await bcrypt.compare(credentials.password, user.password);
+if (!match) return null;
           
           return { id: user.id, email: user.email, name: user.name };
         } catch (error) {

@@ -455,9 +455,10 @@ export default function DashboardPage() {
                   <div className="relative w-40 h-20 mt-1">
                     <svg viewBox="0 0 160 80" className="w-full h-full">
                       <defs>
-                        <filter id="glow">
-                          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                           <feMerge>
+                            <feMergeNode in="coloredBlur" />
                             <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
                           </feMerge>
@@ -467,7 +468,7 @@ export default function DashboardPage() {
                       <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke="hsl(var(--muted))" strokeWidth="14" strokeLinecap="round" />
                       {/* Fill with glow */}
                       <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none"
-                        stroke={goalPct >= 100 ? "#16a34a" : "#4338ca"}
+                        stroke={goalPct >= 100 ? "#4ade80" : "#818cf8"}
                         strokeWidth="14" strokeLinecap="round"
                         strokeDasharray={`${Math.min(goalPct, 100) * 2.198} 219.8`}
                         filter="url(#glow)"
@@ -475,7 +476,7 @@ export default function DashboardPage() {
                       />
                       {/* Percentage text */}
                       <text x="80" y="68" textAnchor="middle" fontSize="18" fontWeight="bold"
-                        fill={goalPct >= 100 ? "#16a34a" : "#4338ca"}>
+                        fill={goalPct >= 100 ? "#4ade80" : "#818cf8"}>
                         {goalPct.toFixed(0)}%
                       </text>
                       <text x="80" y="80" textAnchor="middle" fontSize="8"

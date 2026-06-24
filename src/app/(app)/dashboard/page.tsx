@@ -386,6 +386,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
               )}
+            </div>
 
             <div className="bg-card border rounded-xl p-3">
               <div className="flex items-center gap-1.5 mb-2">
@@ -476,6 +477,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         </>
       )}

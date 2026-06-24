@@ -19,15 +19,15 @@ function parseHFMRow(row: any) {
   // Kolom Time ada 2x, papaparse akan buat Time dan Time_1
   const entryTime = row["Time"] ?? row["Open Time"] ?? "";
   const exitTime = row["Time_1"] ?? row["Close Time"] ?? "";
-  const entryPrice = parseFloat(row["Price"] ?? 0);
-  const exitPrice = parseFloat(row["Price_1"] ?? row["Close Price"] ?? 0) || null;
+  const entryPrice = parseNum(row["Price"]);
+  const exitPrice = parseNum(row["Price_1"] ?? row["Close Price"]) || null;
   const type = (row["Type"] ?? row["type"] ?? "").toLowerCase();
-  const sl = parseFloat(row["S / L"] ?? row["SL"] ?? 0) || null;
-  const tp = parseFloat(row["T / P"] ?? row["TP"] ?? 0) || null;
-  const pnl = parseFloat(row["Profit"] ?? 0);
-  const commission = parseFloat(row["Commission"] ?? 0);
-  const swap = parseFloat(row["Swap"] ?? 0);
-  const lotSize = parseFloat(row["Volume"] ?? row["Size"] ?? 0);
+  const sl = parseNum(row["S / L"] ?? row["SL"]) || null;
+  const tp = parseNum(row["T / P"] ?? row["TP"]) || null;
+  const pnl = parseNum(row["Profit"]);
+  const commission = parseNum(row["Commission"]);
+  const swap = parseNum(row["Swap"]);
+  const lotSize = parseNum(row["Volume"] ?? row["Size"]);
   const symbol = (row["Symbol"] ?? "").replace(/r$/, ""); // hapus suffix 'r' pada XAUUSDr
 
   return {
@@ -73,6 +73,12 @@ function parseJournalRow(row: any) {
     notes: row["Notes"] ?? null,
     tags: row["Tags"] ?? null,
   };
+}
+
+function parseNum(val: any): number {
+  if (val == null) return 0;
+  // Handle angka dengan spasi: "4 178.90" -> 4178.90
+  return parseFloat(String(val).replace(/\s/g, "")) || 0;
 }
 
 function detectFormat(headers: string[]): "hfm" | "journal" | "mt4" {

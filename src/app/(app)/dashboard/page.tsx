@@ -312,22 +312,22 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Net P&L" value={stats ? formatCurrency(stats.netPnL) : "—"} sub={`${stats?.closedTrades ?? 0} trades closed`} color={stats?.netPnL > 0 ? "text-[#16a34a]" : stats?.netPnL < 0 ? "text-[#dc2626]" : undefined} />
+            <StatCard label="Net P&L" value={stats ? formatCurrency(stats.netPnL, data?.account?.currency) : "—"} sub={`${stats?.closedTrades ?? 0} trades closed`} color={stats?.netPnL > 0 ? "text-[#16a34a]" : stats?.netPnL < 0 ? "text-[#dc2626]" : undefined} />
             <StatCard label="Win Rate" value={stats ? `${stats.winRate.toFixed(1)}%` : "—"} sub={`of ${stats?.closedTrades ?? 0} trades`} />
             <StatCard label="Avg R-Multiple" value={stats ? formatR(stats.avgR) : "—"} sub="per trade" color={stats?.avgR > 0 ? "text-[#16a34a]" : stats?.avgR < 0 ? "text-[#dc2626]" : undefined} />
             <StatCard label="Profit Factor" value={stats ? stats.profitFactor.toFixed(2) : "—"} sub="gross win / loss" color={stats?.profitFactor >= 1 ? "text-[#16a34a]" : "text-[#dc2626]"} />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Best Day" value={bestDay ? formatCurrency(bestDay.pnl) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#16a34a]" : undefined} />
-            <StatCard label="Worst Day" value={worstDay ? formatCurrency(worstDay.pnl) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#dc2626]" : undefined} />
-            <StatCard label="Most Profitable Day" value={mostProfitableDoW ? DAYS_OF_WEEK_FULL[parseInt(mostProfitableDoW[0])] : "—"} sub={mostProfitableDoW ? formatCurrency(mostProfitableDoW[1].pnl) : undefined} color="text-[#16a34a]" />
+            <StatCard label="Best Day" value={bestDay ? formatCurrency(bestDay.pnl, data?.account?.currency) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#16a34a]" : undefined} />
+            <StatCard label="Worst Day" value={worstDay ? formatCurrency(worstDay.pnl, data?.account?.currency) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#dc2626]" : undefined} />
+            <StatCard label="Most Profitable Day" value={mostProfitableDoW ? DAYS_OF_WEEK_FULL[parseInt(mostProfitableDoW[0])] : "—"} sub={mostProfitableDoW ? formatCurrency(mostProfitableDoW[1].pnl, data?.account?.currency) : undefined} color="text-[#16a34a]" />
             <StatCard label="Most Active Day" value={mostActiveDoW ? DAYS_OF_WEEK_FULL[parseInt(mostActiveDoW[0])] : "—"} sub={mostActiveDoW ? `${mostActiveDoW[1].count} total trades` : undefined} />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Avg Win" value={stats?.avgWin != null ? formatCurrency(stats.avgWin) : "—"} sub="per winning trade" color="text-[#16a34a]" />
-            <StatCard label="Avg Loss" value={stats?.avgLoss != null ? formatCurrency(stats.avgLoss) : "—"} sub="per losing trade" color="text-[#dc2626]" />
+            <StatCard label="Avg Win" value={stats?.avgWin != null ? formatCurrency(stats.avgWin, data?.account?.currency) : "—"} sub="per winning trade" color="text-[#16a34a]" />
+            <StatCard label="Avg Loss" value={stats?.avgLoss != null ? formatCurrency(stats.avgLoss, data?.account?.currency) : "—"} sub="per losing trade" color="text-[#dc2626]" />
             <StatCard label="Avg Trade Duration" value={avgDuration ?? "—"} sub="across recent trades" />
             <StatCard label="Current Streak" value={stats?.streak ? `${stats.streak.current} ${stats.streak.type === 'win' ? '🔥' : '❄️'}` : "—"} sub={stats?.streak ? `Max win: ${stats.streak.maxWin} · Max loss: ${stats.streak.maxLoss}` : undefined} color={stats?.streak?.type === 'win' ? 'text-[#16a34a]' : 'text-[#dc2626]'} />
           </div>
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`} />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} />
                     <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={{ r: 3, fill: CURVE_COLOR }} activeDot={{ r: 5 }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`} />
                     <ReferenceLine y={0} stroke="hsl(var(--border))" />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, "USD", true), "Daily P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Daily P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                     <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                       {dailyBarData.map((entry: any, i: number) => (
                         <Cell key={i} fill={entry.pnl >= 0 ? "#16a34a" : "#dc2626"} />
@@ -443,7 +443,7 @@ export default function DashboardPage() {
                 <div className="text-right">
                   {t.pnl !== null ? (
                     <span className={cn("text-[11px] font-semibold", t.pnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
-                      {formatCurrency(t.pnl)}
+                      {formatCurrency(t.pnl, data?.account?.currency)}
                     </span>
                   ) : <span className="text-[10px] text-muted-foreground">open</span>}
                 </div>

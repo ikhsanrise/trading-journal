@@ -177,6 +177,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [accountOpen, setAccountOpen] = useState(false);
+  const [equityView, setEquityView] = useState<"daily"|"weekly"|"monthly">("daily");
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -200,9 +201,9 @@ export default function DashboardPage() {
   const bestDay = calendar.length ? calendar.reduce((a: any, b: any) => b.pnl > a.pnl ? b : a, calendar[0]) : null;
   const worstDay = calendar.length ? calendar.reduce((a: any, b: any) => b.pnl < a.pnl ? b : a, calendar[0]) : null;
 
-  const cumulativeCurve = equityCurve.length > 0
+  const rawCurve = equityCurve.length > 0
     ? equityCurve.map((p: any) => ({
-        date: p.date.slice(5),
+        date: p.date,
         pnl: Math.round((p.balance - (data?.account?.initialBalance ?? 0)) * 100) / 100,
       }))
     : (() => {
@@ -210,8 +211,30 @@ export default function DashboardPage() {
         return calendar
           .slice()
           .sort((a: any, b: any) => a.date.localeCompare(b.date))
-          .map((d: any) => { running += d.pnl; return { date: d.date.slice(5), pnl: Math.round(running * 100) / 100 }; });
+          .map((d: any) => { running += d.pnl; return { date: d.date, pnl: Math.round(running * 100) / 100 }; });
       })();
+
+  // Aggregate equity curve by view
+  const aggregateEquity = (view: "daily"|"weekly"|"monthly") => {
+    if (!rawCurve.length) return [];
+    if (view === "daily") return rawCurve.map(p => ({ ...p, date: p.date.slice(5) }));
+    const map = new Map<string, number>();
+    for (const p of rawCurve) {
+      const d = new Date(p.date);
+      let key = "";
+      if (view === "weekly") {
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay());
+        key = weekStart.toISOString().slice(0, 10).slice(5);
+      } else {
+        key = p.date.slice(0, 7).replace("-", "/");
+      }
+      map.set(key, p.pnl); // ambil nilai terakhir per period
+    }
+    return Array.from(map.entries()).map(([date, pnl]) => ({ date, pnl }));
+  };
+
+  const cumulativeCurve = aggregateEquity(equityView);
 
   const dailyBarData = calendar
     .slice()
@@ -328,32 +351,52 @@ export default function DashboardPage() {
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="bg-card border rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-2">
-                <p className="text-xs font-medium">Daily Net Cumulative P&L</p>
-                <Info className="w-3 h-3 text-muted-foreground" />
+          <div className="space-y-3">
+            {/* Equity Curve - Full Width */}
+            <div className="bg-card border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-semibold">Equity Curve</p>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                  {(["daily","weekly","monthly"] as const).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setEquityView(v)}
+                      className={`text-[10px] px-2.5 py-1 rounded-md font-medium transition-colors capitalize ${equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >{v}</button>
+                  ))}
+                </div>
               </div>
               {cumulativeCurve.length > 0 ? (
-                <ResponsiveContainer width="100%" height={140}>
+                <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.3} />
+                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.35} />
                         <stop offset="100%" stopColor={CURVE_COLOR} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? 'USD'; const sym = cur === 'IDR' ? 'Rp' : '$'; return v >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} />
-                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={{ r: 3, fill: CURVE_COLOR }} activeDot={{ r: 5 }} />
+                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={52} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? "USD"; const sym = cur === "IDR" ? "Rp" : "$"; return Math.abs(v) >= 1000000 ? `${sym}${(v/1000000).toFixed(1)}M` : Math.abs(v) >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="4 2" />
+                    <Tooltip
+                      formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Equity"]}
+                      contentStyle={TOOLTIP_STYLE}
+                      labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                      itemStyle={{ color: CURVE_COLOR }}
+                    />
+                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR }} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
+                <div className="h-48 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
               )}
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
             <div className="bg-card border rounded-xl p-3">
               <div className="flex items-center gap-1.5 mb-2">
@@ -380,6 +423,7 @@ export default function DashboardPage() {
               )}
             </div>
 
+            </div>
             <div className="bg-card border rounded-xl p-3">
               <p className="text-xs font-medium mb-2">Win Rate by Instrument</p>
               <div className="space-y-2">

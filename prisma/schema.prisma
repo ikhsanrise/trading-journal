@@ -66,6 +66,9 @@ model TradingAccount {
   updatedAt      DateTime @updatedAt
   trades         Trade[]
   transactions   Transaction[]
+
+  @@index([userId])
+  @@index([userId, isDefault])
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -100,6 +103,10 @@ model Trade {
   setupCategory    String?
   account          TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   setup            Setup?         @relation(fields: [setupId], references: [id])
+
+  @@index([accountId])
+  @@index([accountId, status])
+  @@index([accountId, entryDate])
 }
 
 model Transaction {
@@ -110,6 +117,8 @@ model Transaction {
   note        String?
   date        DateTime       @default(now())
   account     TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
 }
 
 model Setup {

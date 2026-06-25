@@ -39,7 +39,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
     setLoading(false);
 
     if (data.imported > 0) {
-      setTimeout(onImported, 1500);
+      setTimeout(onImported, 2000);
     }
   }
 
@@ -112,28 +112,24 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
           {/* Result */}
           {result && (
-            <div
-              className={`rounded-lg p-3 flex items-start gap-2 ${
-                result.imported > 0
-                  ? "bg-profit-50 text-profit-800"
-                  : "bg-loss-50 text-loss-800"
-              }`}
-            >
-              {result.imported > 0 ? (
+            <div className={`rounded-lg p-3 flex items-start gap-2 ${result.imported > 0 || result.skipped > 0 ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+              {result.imported > 0 || result.skipped > 0 ? (
                 <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
               ) : (
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               )}
-              <div>
-                <p className="text-xs font-medium">
-                  {result.imported > 0
-                    ? `${result.imported} trades imported successfully!`
-                    : "Import failed"}
-                </p>
+              <div className="space-y-0.5">
+                {result.imported > 0 && (
+                  <p className="text-xs font-medium">{result.imported} trades imported successfully!</p>
+                )}
+                {result.skipped > 0 && (
+                  <p className="text-xs text-muted-foreground">{result.skipped} duplicate trades skipped.</p>
+                )}
+                {result.imported === 0 && result.skipped === 0 && (
+                  <p className="text-xs font-medium">No new trades found.</p>
+                )}
                 {result.failed > 0 && (
-                  <p className="text-[11px] mt-0.5">
-                    {result.failed} rows failed to process
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">{result.failed} rows failed.</p>
                 )}
               </div>
             </div>

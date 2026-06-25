@@ -256,10 +256,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Batch insert semua trades sekaligus
-  if (tradesToCreate.length > 0) {
-    await prisma.trade.createMany({ data: tradesToCreate, skipDuplicates: true });
-    created.push(...tradesToCreate.map(t => t.symbol));
+  // Dedup: ambil existing trades untuk filter duplikat
+  const existing = await prisma.trade.findMany({
+    where: { accountId },
+    select: { entryDate: true, symbol: true, direction: true, lotSize: true },
+  });
+  const existingKeys = new Set(
+    existing.map(t => `${t.symbol}|${t.direction}|${t.lotSize}|${new Date(t.entryDate).getTime()}`)
+  );
+
+  const newTrades = tradesToCreate.filter(t => {
+    const key = `${t.symbol}|${t.direction}|${t.lotSize}|${new Date(t.entryDate).getTime()}`;
+    return !existingKeys.has(key);
+  });
+
+  const skipped = tradesToCreate.length - newTrades.length;
+
+  // Batch insert hanya trades baru
+  if (newTrades.length > 0) {
+    await prisma.trade.createMany({ data: newTrades, skipDuplicates: true });
+    created.push(...newTrades.map(t => t.symbol));
   }
 
   if (created.length > 0 && totalPnl !== 0) {
@@ -271,11 +287,9 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     imported: created.length,
+    skipped,
     failed: failed.length,
     errors: failed.slice(0, 5),
     format,
-    transactions: 0,
-    depositTotal: 0,
-    withdrawTotal: 0,
   });
 }

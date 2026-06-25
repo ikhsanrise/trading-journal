@@ -44,8 +44,8 @@ export default function ImportModal({ onClose, onImported }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-card border rounded-xl w-full max-w-md shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+      <div className="bg-card border rounded-xl w-full max-w-md shadow-xl" style={{ backgroundColor: "hsl(var(--card))" }}>
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-sm font-medium">Import from CSV</h2>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted">

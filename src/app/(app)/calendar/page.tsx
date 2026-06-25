@@ -205,8 +205,8 @@ export default function CalendarPage() {
                             <p className="text-[9px] sm:text-[11px] font-bold leading-tight truncate" style={{ color: c?.text }}>
                               {formatCurrency(entry.pnl, account?.currency)}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] mt-0.5 truncate" style={{ color: c?.sub }}>
-                              {entry.tradeCount}t
+                            <p className="text-[9px] sm:text-[10px] mt-0.5 truncate" style={{ color: c?.sub }}>
+                              {entry.tradeCount} {entry.tradeCount === 1 ? "Trade" : "Trades"}
                             </p>
                           </>
                         )}
@@ -229,7 +229,7 @@ export default function CalendarPage() {
                         ? formatCurrency(wPnl, account?.currency)
                         : <span className="text-muted-foreground">—</span>}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">{wDays}d · {wCount}t</p>
+                    <p className="text-[9px] text-muted-foreground">{wDays} {wDays === 1 ? "Day" : "Days"} · {wCount} {wCount === 1 ? "Trade" : "Trades"}</p>
                   </div>
                 </div>
               );

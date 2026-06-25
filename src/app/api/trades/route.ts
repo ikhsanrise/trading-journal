@@ -6,9 +6,8 @@ import { calculateRMultiple, getOutcomeFromR } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return NextResponse.json({ trades: [], total: 0, page: 1, pageSize: 15, totalPages: 0 });
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user) return NextResponse.json({ trades: [], total: 0, page: 1, pageSize: 15, totalPages: 0 });
+  if (!session?.user?.id) return NextResponse.json({ trades: [], total: 0, page: 1, pageSize: 15, totalPages: 0 });
+  const userId = session.user.id;
 
   const { searchParams } = new URL(req.url);
   const accountId = searchParams.get("accountId");

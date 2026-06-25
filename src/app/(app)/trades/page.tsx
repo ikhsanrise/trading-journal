@@ -17,10 +17,10 @@ const SETUP_CATS = ["A", "A+", "A++", "B"];
 const MOODS = ["😖","😕","😐","🙂","😎"];
 
 function PnLPill({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-muted-foreground text-xs">open</span>;
-  if (value > 0) return <span className="pnl-win">{formatCurrency(value)}</span>;
-  if (value < 0) return <span className="pnl-loss">{formatCurrency(value)}</span>;
-  return <span className="pnl-be">$0.00</span>;
+  if (value === null) return <span className="text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground font-medium">Open</span>;
+  if (value > 0) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#16a34a]/20 text-[#4ade80]">{formatCurrency(value)}</span>;
+  if (value < 0) return <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#dc2626]/20 text-[#f87171]">{formatCurrency(value)}</span>;
+  return <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground">Rp 0</span>;
 }
 
 function OutcomeBadge({ outcome }: { outcome: string | null }) {

@@ -141,6 +141,16 @@ export async function POST(req: NextRequest) {
   if (dealsStart > 0) {
     let depTotal = 0, wdrTotal = 0;
     const txRows: { type: string; amount: number; note: string; date: Date }[] = [];
+
+    // Fetch existing transactions untuk dedup
+    const existingTx = await prisma.transaction.findMany({
+      where: { accountId },
+      select: { type: true, amount: true, date: true },
+    });
+    const existingTxKeys = new Set(
+      existingTx.map(t => `${t.type}|${t.amount}|${new Date(t.date).getTime()}`)
+    );
+
     for (let i = dealsStart; i < allLines.length; i++) {
       const row = allLines[i].split(",").map((s: string) => s.trim());
       if (!row[0] || row[0].startsWith("Results") || row[0].startsWith("Total")) break;
@@ -149,6 +159,12 @@ export async function POST(req: NextRequest) {
         const amount = parseNum(row[11]);
         const comment = row[13] ?? "";
         const date = parseDate(row[0]) ?? new Date();
+        const txKey = amount > 0
+          ? `deposit|${amount}|${date.getTime()}`
+          : `withdraw|${Math.abs(amount)}|${date.getTime()}`;
+
+        if (existingTxKeys.has(txKey)) continue; // skip duplikat
+
         if (amount > 0) { depTotal += amount; txRows.push({ type: "deposit", amount, note: comment, date }); }
         else if (amount < 0) { wdrTotal += Math.abs(amount); txRows.push({ type: "withdraw", amount: Math.abs(amount), note: comment, date }); }
       }

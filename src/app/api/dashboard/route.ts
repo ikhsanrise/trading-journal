@@ -9,8 +9,8 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const userId = session.user.id;
+  if (!userId) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") ?? "all";
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   else if (period === "1m") dateFrom = startOfMonth(now);
   else dateFrom = new Date("2000-01-01");
 
-  const accounts = await prisma.tradingAccount.findMany({ where: { userId: user.id } });
+  const accounts = await prisma.tradingAccount.findMany({ where: { userId } });
   const targetAccount = accountId
     ? accounts.find((a) => a.id === accountId)
     : accounts.find((a) => a.isDefault) ?? accounts[0];

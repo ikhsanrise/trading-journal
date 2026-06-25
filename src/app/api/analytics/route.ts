@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const userId = session.user.id;
+  if (!userId) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const accounts = await prisma.tradingAccount.findMany({ where: { userId: user.id } });
+  const accounts = await prisma.tradingAccount.findMany({ where: { userId } });
   const { searchParams } = new URL(req.url);
   const accountIdParam = searchParams.get("accountId");
   const accountIds = accountIdParam

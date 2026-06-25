@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const page = parseInt(searchParams.get("page") ?? "1");
   const pageSize = parseInt(searchParams.get("pageSize") ?? "15");
 
-  const accounts = await prisma.tradingAccount.findMany({ where: { userId: user.id }, select: { id: true } });
+  const accounts = await prisma.tradingAccount.findMany({ where: { userId }, select: { id: true } });
   const accountIds = accounts.map((a) => a.id);
 
   const where: any = { accountId: accountId && accountIds.includes(accountId) ? accountId : { in: accountIds } };

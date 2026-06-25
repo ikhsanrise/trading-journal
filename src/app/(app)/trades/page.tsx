@@ -214,7 +214,7 @@ export default function TradesPage() {
                       <td className="px-3 py-2 font-medium">{t.symbol}</td>
                       <td className="px-3 py-2">
                         <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded",
-                          t.direction === "long" ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#fee2e2] text-[#dc2626]")}>
+                          t.direction === "long" ? "bg-[#16a34a]/20 text-[#4ade80]" : "bg-[#dc2626]/20 text-[#f87171]")}>
                           {t.direction === "long" ? "Long" : "Short"}
                         </span>
                       </td>

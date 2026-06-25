@@ -35,42 +35,44 @@ function PerfTable({ title, rows, keyLabel }: { title: string; rows: any[]; keyL
       <div className="px-4 py-3 border-b">
         <p className="text-xs font-semibold">{title}</p>
       </div>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b bg-muted/40">
-            <th className="text-left px-4 py-2 font-medium text-muted-foreground">{keyLabel}</th>
-            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Trades</th>
-            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Win Rate</th>
-            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Avg R</th>
-            <th className="text-right px-4 py-2 font-medium text-muted-foreground">Net P&L</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr><td colSpan={5} className="text-center py-6 text-muted-foreground">No data</td></tr>
-          ) : rows.map((row, i) => (
-            <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
-              <td className="px-4 py-2 font-medium">{row.name ?? row.category ?? row.session ?? row.day}</td>
-              <td className="px-4 py-2 text-right text-muted-foreground">{row.totalTrades}</td>
-              <td className="px-4 py-2 text-right">
-                <span className={cn("font-medium", row.winRate >= 50 ? "text-[#16a34a]" : "text-[#dc2626]")}>
-                  {row.winRate.toFixed(1)}%
-                </span>
-              </td>
-              <td className="px-4 py-2 text-right">
-                <span className={cn("font-medium", (row.avgR ?? 0) > 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
-                  {row.avgR != null ? formatR(row.avgR) : "—"}
-                </span>
-              </td>
-              <td className="px-4 py-2 text-right">
-                <span className={cn("font-medium", row.netPnL > 0 ? "text-[#16a34a]" : row.netPnL < 0 ? "text-[#dc2626]" : "")}>
-                  {formatCurrency(row.netPnL)}
-                </span>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-[420px]">
+          <thead>
+            <tr className="border-b bg-muted/40">
+              <th className="text-left px-3 py-2 font-medium text-muted-foreground">{keyLabel}</th>
+              <th className="text-right px-2 py-2 font-medium text-muted-foreground">Trades</th>
+              <th className="text-right px-2 py-2 font-medium text-muted-foreground">Win%</th>
+              <th className="text-right px-2 py-2 font-medium text-muted-foreground">Avg R</th>
+              <th className="text-right px-3 py-2 font-medium text-muted-foreground">Net P&L</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr><td colSpan={5} className="text-center py-6 text-muted-foreground">No data</td></tr>
+            ) : rows.map((row, i) => (
+              <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                <td className="px-3 py-2 font-medium">{row.name ?? row.category ?? row.session ?? row.day}</td>
+                <td className="px-2 py-2 text-right text-muted-foreground">{row.totalTrades}</td>
+                <td className="px-2 py-2 text-right">
+                  <span className={cn("font-medium", row.winRate >= 50 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                    {row.winRate.toFixed(1)}%
+                  </span>
+                </td>
+                <td className="px-2 py-2 text-right">
+                  <span className={cn("font-medium", (row.avgR ?? 0) > 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                    {row.avgR != null ? formatR(row.avgR) : "—"}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <span className={cn("font-semibold px-1.5 py-0.5 rounded text-[11px]", row.netPnL > 0 ? "bg-[#16a34a]/20 text-[#4ade80]" : row.netPnL < 0 ? "bg-[#dc2626]/20 text-[#f87171]" : "text-muted-foreground")}>
+                    {formatCurrency(row.netPnL)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

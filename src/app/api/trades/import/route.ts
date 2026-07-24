@@ -1,3 +1,5 @@
+export const maxDuration = 60;
+
 // src/app/api/trades/import/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";

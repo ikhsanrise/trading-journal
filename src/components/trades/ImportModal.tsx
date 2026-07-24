@@ -25,22 +25,117 @@ export default function ImportModal({ onClose, onImported }: Props) {
       });
   });
 
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+
+  function parseNum(val: any): number {
+    if (val == null) return 0;
+    return parseFloat(String(val).replace(/\s/g, "")) || 0;
+  }
+
+  function parseDate(str: string): Date | null {
+    if (!str?.trim()) return null;
+    const dotFmt = str.match(/^(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+    if (dotFmt) return new Date(`${dotFmt[1]}-${dotFmt[2]}-${dotFmt[3]}T${dotFmt[4]}`);
+    return new Date(str);
+  }
+
+  function detectSession(date: Date): string {
+    const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+    const hour = wib.getUTCHours();
+    if (hour >= 20 || hour < 4) return "newyork";
+    if (hour >= 16) return "london";
+    if (hour >= 7) return "asia";
+    if (hour >= 5) return "sydney";
+    return "newyork";
+  }
+
   async function handleImport() {
     if (!file || !accountId) return;
     setLoading(true);
+    setProgress({ current: 0, total: 0 });
 
+    const text = await file.text();
+    const allLines = text.split("\n");
+
+    // Handle deposit/withdraw dari Deals section dulu via server
     const fd = new FormData();
     fd.append("file", file);
     fd.append("accountId", accountId);
+    fd.append("dealsOnly", "true");
+    await fetch("/api/trades/import", { method: "POST", body: fd }).catch(() => {});
 
-    const res = await fetch("/api/trades/import", { method: "POST", body: fd });
-    const data = await res.json();
-    setResult(data);
-    setLoading(false);
-
-    if (data.imported > 0) {
-      setTimeout(onImported, 2000);
+    // Parse Positions section di client
+    let dataStart = 0;
+    for (let i = 0; i < allLines.length; i++) {
+      const l = allLines[i].trim();
+      if (l.startsWith("Time,Position") || l.startsWith("Date,Symbol")) { dataStart = i; break; }
+      if (l.startsWith("Positions,")) { dataStart = i + 1; break; }
     }
+
+    const headers = allLines[dataStart].split(",").map(h => h.trim());
+    const trades: any[] = [];
+
+    for (let i = dataStart + 1; i < allLines.length; i++) {
+      const line = allLines[i].trim();
+      if (!line || line.startsWith("Deals") || line.startsWith("Time,Deal")) break;
+      const cols = line.split(",").map(s => s.trim());
+      if (cols.length < 5) continue;
+
+      const row: any = {};
+      headers.forEach((h, idx) => { row[h] = cols[idx] ?? ""; });
+
+      const symbol = (row["Symbol"] ?? "").replace(/r$/, "").toUpperCase();
+      const lotSize = parseNum(row["Volume"] ?? row["Size"]);
+      if (!symbol || !lotSize) continue;
+
+      const entryPrice = parseNum(row["Price"]);
+      if (!entryPrice) continue;
+
+      const exitPrice = parseNum(cols[9]) || null;
+      const sl = parseNum(row["S / L"]) || null;
+      const tp = parseNum(row["T / P"]) || null;
+      const pnl = parseNum(cols[12]);
+      const commission = parseNum(cols[10]);
+      const swap = parseNum(cols[11]);
+      const direction = (row["Type"] ?? "").toLowerCase().includes("buy") ? "long" : "short";
+      const exitTimeStr = cols[8]?.trim();
+      const entryDate = parseDate(row["Time"] ?? row["Open Time"] ?? "") ?? new Date();
+      const exitDate = exitTimeStr ? parseDate(exitTimeStr) : null;
+      const status = exitDate ? "closed" : "open";
+      const outcome = pnl > 0 ? "win" : pnl < 0 ? "loss" : status === "closed" ? "breakeven" : null;
+      const session = detectSession(entryDate);
+
+      trades.push({
+        accountId, symbol, direction, entryPrice, exitPrice,
+        stopLoss: sl, takeProfit: tp, lotSize,
+        entryDate: entryDate.toISOString(),
+        exitDate: exitDate?.toISOString() ?? null,
+        commission, swap, pnl, status, outcome, session,
+        rMultiple: null,
+      });
+    }
+
+    // Kirim dalam batch 50
+    const BATCH = 50;
+    setProgress({ current: 0, total: trades.length });
+    let totalImported = 0, totalSkipped = 0;
+
+    for (let i = 0; i < trades.length; i += BATCH) {
+      const batch = trades.slice(i, i + BATCH);
+      const res = await fetch("/api/trades/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId, trades: batch }),
+      });
+      const d = await res.json();
+      totalImported += d.imported ?? 0;
+      totalSkipped += d.skipped ?? 0;
+      setProgress({ current: Math.min(i + BATCH, trades.length), total: trades.length });
+    }
+
+    setResult({ imported: totalImported, skipped: totalSkipped, failed: 0 });
+    setLoading(false);
+    if (totalImported > 0) setTimeout(onImported, 2000);
   }
 
   return (
@@ -109,6 +204,20 @@ export default function ImportModal({ onClose, onImported }: Props) {
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </div>
+
+          {/* Progress */}
+          {loading && progress.total > 0 && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>Importing...</span>
+                <span>{progress.current}/{progress.total}</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                  style={{ width: `${progress.total > 0 ? (progress.current/progress.total)*100 : 0}%` }} />
+              </div>
+            </div>
+          )}
 
           {/* Result */}
           {result && (

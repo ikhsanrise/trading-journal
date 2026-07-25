@@ -112,7 +112,7 @@ export default function PropFirmPage() {
   if (loading) return <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="p-4 space-y-4 max-w-5xl">
+    <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Building2 } from "lucide-react";
 import {
   TrendingUp, LayoutDashboard, ListOrdered, BarChart3,
   CalendarDays, BookOpen, Settings,
@@ -12,6 +13,7 @@ const navItems = [
   { href: "/trades", icon: ListOrdered, label: "Trade Log" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/calendar", icon: CalendarDays, label: "Calendar" },
+  { href: "/propfirm", icon: Building2, label: "Prop Firm" },
   { href: "/playbook", icon: BookOpen, label: "Playbook" },
 ];
 

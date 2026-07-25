@@ -21,6 +21,7 @@ model User {
   sessions        Session[]
   setups          Setup[]
   tradingAccounts TradingAccount[]
+  propFirms       PropFirm[]
 }
 
 model Account {
@@ -107,6 +108,30 @@ model Trade {
   @@index([accountId])
   @@index([accountId, status])
   @@index([accountId, entryDate])
+}
+
+model PropFirm {
+  id          String       @id @default(cuid())
+  userId      String
+  name        String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries     PropEntry[]
+  createdAt   DateTime     @default(now())
+
+  @@index([userId])
+}
+
+model PropEntry {
+  id         String    @id @default(cuid())
+  propFirmId String
+  type       String    // "expense" | "payout"
+  amount     Float
+  note       String?
+  date       DateTime  @default(now())
+  propFirm   PropFirm  @relation(fields: [propFirmId], references: [id], onDelete: Cascade)
+
+  @@index([propFirmId])
+  @@index([propFirmId, type])
 }
 
 model Transaction {

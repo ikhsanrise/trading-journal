@@ -131,6 +131,9 @@ export async function POST(req: NextRequest) {
   let text = await file.text();
   const allLines = text.split("\n");
 
+  // dealsOnly mode - hanya proses deposit/withdraw, skip trades
+  const dealsOnly = formData.get("dealsOnly") === "true";
+
   // === Parse Deals section untuk deposit/withdraw ===
   let dealsStart = -1;
   for (let i = 0; i < allLines.length; i++) {

@@ -201,14 +201,33 @@ export default function PropFirmPage() {
 
           {/* Calendar */}
           <div className="bg-card border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold">Activity Calendar</p>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1))} className="w-6 h-6 flex items-center justify-center rounded border hover:bg-muted text-xs">‹</button>
-                <span className="text-xs font-medium">{format(calMonth, "MMMM yyyy")}</span>
-                <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1))} className="w-6 h-6 flex items-center justify-center rounded border hover:bg-muted text-xs">›</button>
-              </div>
-            </div>
+            {/* Monthly summary */}
+            {(() => {
+              const monthStr = format(calMonth, "yyyy-MM");
+              const monthEntries = allEntries.filter(e => format(new Date(e.date), "yyyy-MM") === monthStr);
+              const mExpense = monthEntries.filter(e => e.type === "expense").reduce((s, e) => s + e.amount, 0);
+              const mPayout = monthEntries.filter(e => e.type === "payout").reduce((s, e) => s + e.amount, 0);
+              const mNet = mPayout - mExpense;
+              return (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs font-semibold">Activity Calendar</p>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="text-muted-foreground">Expense: <span className="text-[#f87171] font-medium">{formatCurrency(mExpense, currency, false)}</span></span>
+                      <span className="text-muted-foreground">Payout: <span className="text-[#4ade80] font-medium">{formatCurrency(mPayout, currency, false)}</span></span>
+                      <span className={cn("font-semibold px-1.5 py-0.5 rounded", mNet >= 0 ? "bg-[#16a34a]/20 text-[#4ade80]" : "bg-[#dc2626]/20 text-[#f87171]")}>
+                        Net: {formatCurrency(mNet, currency)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1))} className="w-6 h-6 flex items-center justify-center rounded border hover:bg-muted text-xs">‹</button>
+                    <span className="text-xs font-medium">{format(calMonth, "MMMM yyyy")}</span>
+                    <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() + 1))} className="w-6 h-6 flex items-center justify-center rounded border hover:bg-muted text-xs">›</button>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="grid grid-cols-7 gap-1 mb-1">
               {["S","M","T","W","T","F","S"].map((d, i) => (
                 <div key={i} className="text-center text-[9px] text-muted-foreground font-medium py-1">{d}</div>

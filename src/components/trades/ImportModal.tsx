@@ -77,12 +77,18 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
     for (let i = dataStart + 1; i < allLines.length; i++) {
       const line = allLines[i].trim();
-      if (!line || line.startsWith("Deals") || line.startsWith("Time,Deal") || line.startsWith("Orders") || line.startsWith("Time,Order")) break;
-      // Skip baris orders (canceled/filled) - tidak ada symbol valid
+      if (!line) continue;
+      // Stop di section lain
+      if (line.match(/^(Deals|Orders|Results|Time,Deal|Time,Order)/i)) break;
+      // Hanya proses baris yang dimulai dengan tanggal format 2026.xx.xx
+      if (!line.match(/^\d{4}\.\d{2}\.\d{2}/)) continue;
       const testCols = line.split(",");
-      // Skip Orders section rows: sell limit, buy limit, sell stop, buy stop
+      // Pastikan kolom 2 adalah Position ID (numerik panjang)
+      const posId = testCols[1]?.trim() ?? "";
+      if (!posId.match(/^\d{8,}$/)) continue;
+      // Skip Orders: type mengandung limit/stop atau status canceled/filled
       const tradeType = testCols[3]?.trim().toLowerCase() ?? "";
-      if (tradeType.includes("limit") || tradeType.includes("stop") || tradeType === "canceled" || tradeType === "filled") continue;
+      if (tradeType.includes("limit") || tradeType.includes("stop")) continue;
       if (testCols[9]?.trim() === "canceled" || testCols[9]?.trim() === "filled") continue;
       const cols = line.split(",").map(s => s.trim());
       if (cols.length < 5) continue;

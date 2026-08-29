@@ -55,7 +55,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
     setProgress({ current: 0, total: 0 });
 
     const text = await file.text();
-    const allLines = text.split("\n");
+    const allLines = text.split(/\r?\n/);
 
     // Handle deposit/withdraw dari Deals section dulu via server
     const fd = new FormData();
@@ -76,7 +76,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
     const trades: any[] = [];
 
     for (let i = dataStart + 1; i < allLines.length; i++) {
-      const line = allLines[i].trim();
+      const line = allLines[i].replace(/\r$/, "").trim();
       if (!line) continue;
       // Stop di section lain
       if (line.match(/^(Deals|Orders|Results|Time,Deal|Time,Order)/i)) break;

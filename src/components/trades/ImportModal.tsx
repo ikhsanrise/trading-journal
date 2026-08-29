@@ -133,6 +133,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
     // Kirim dalam batch 50
     const BATCH = 50;
+    console.log('Total parsed trades:', trades.length, '| sample positionId:', trades[0]?.positionId);
     setProgress({ current: 0, total: trades.length });
     let totalImported = 0, totalSkipped = 0;
 

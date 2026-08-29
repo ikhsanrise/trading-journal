@@ -118,8 +118,9 @@ export default function ImportModal({ onClose, onImported }: Props) {
       const session = detectSession(entryDate);
 
       const positionId = cols[1]?.trim() ?? "";
-      // Skip trade yang entry = exit price (tidak ada pergerakan harga)
-      if (exitPrice !== null && Math.abs(entryPrice - exitPrice) < 0.001) continue;
+      // Skip trade yang entry = exit price
+      if (exitPrice !== null && exitPrice > 0 && Math.abs(entryPrice - exitPrice) < 0.001) continue;
+      trades.push({
         accountId, symbol, direction, entryPrice, exitPrice,
         stopLoss: sl, takeProfit: tp, lotSize,
         entryDate: entryDate.toISOString(),

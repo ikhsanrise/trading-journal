@@ -58,6 +58,8 @@ export default function TradesPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [outcome, setOutcome] = useState("");
@@ -79,7 +81,7 @@ export default function TradesPage() {
     if (setupCat) params.set("setupCategory", setupCat);
     if (accountId) params.set("accountId", accountId);
     params.set("page", String(page));
-    params.set("pageSize", "15");
+    params.set("pageSize", "50");
     const res = await fetch(`/api/trades?${params}`);
     const data = await res.json();
     setTrades(data.trades ?? []);
@@ -93,6 +95,16 @@ export default function TradesPage() {
   }, [search, outcome, direction, setupCat, page, accountId]);
 
   useEffect(() => { fetchTrades(); }, [fetchTrades]);
+
+  async function deleteAllTrades() {
+    if (!accountId) return;
+    setDeletingAll(true);
+    await fetch(`/api/trades/all?accountId=${accountId}`, { method: "DELETE" });
+    setDeletingAll(false);
+    setShowDeleteAll(false);
+    setPage(1);
+    fetchTrades();
+  }
 
   async function deleteTrade(e: React.MouseEvent, id: string) {
     e.stopPropagation();
@@ -113,6 +125,10 @@ export default function TradesPage() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2"><span className="text-sm font-semibold">Trade Log</span><AccountSwitcher value={accountId} onChange={(id) => { setAccountId(id); }} /></div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setShowDeleteAll(true)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-red-500/50 text-red-500 hover:bg-red-500/10 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" /> Delete All
+          </button>
           <button onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border text-muted-foreground hover:text-foreground transition-colors">
             <Upload className="w-3.5 h-3.5" /> Import CSV
@@ -328,6 +344,34 @@ export default function TradesPage() {
       {showForm && (
         <TradeFormModal trade={editTrade} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); fetchTrades(); }} />
       )}
+      {/* Delete All Confirmation Modal */}
+      {showDeleteAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteAll(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Delete All Trades</p>
+                <p className="text-xs text-muted-foreground">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              All <span className="font-semibold text-foreground">{total} trades</span> in account <span className="font-semibold text-foreground">{accountId ? "current account" : ""}</span> will be permanently deleted.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowDeleteAll(false)} className="flex-1 py-2 text-xs border rounded-xl text-muted-foreground hover:bg-muted">Cancel</button>
+              <button onClick={deleteAllTrades} disabled={deletingAll}
+                className="flex-1 py-2 text-xs bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 font-medium">
+                {deletingAll ? "Deleting..." : "Delete All"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showImport && (
         <ImportModal onClose={() => setShowImport(false)} onImported={() => { setShowImport(false); fetchTrades(); }} />
       )}

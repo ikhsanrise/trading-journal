@@ -77,7 +77,10 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
     for (let i = dataStart + 1; i < allLines.length; i++) {
       const line = allLines[i].trim();
-      if (!line || line.startsWith("Deals") || line.startsWith("Time,Deal")) break;
+      if (!line || line.startsWith("Deals") || line.startsWith("Time,Deal") || line.startsWith("Orders") || line.startsWith("Time,Order")) break;
+      // Skip baris orders (canceled/filled) - tidak ada symbol valid
+      const testCols = line.split(",");
+      if (testCols[3]?.trim() === "canceled" || testCols[9]?.trim() === "canceled" || testCols[9]?.trim() === "filled") continue;
       const cols = line.split(",").map(s => s.trim());
       if (cols.length < 5) continue;
 

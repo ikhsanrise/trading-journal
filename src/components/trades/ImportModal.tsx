@@ -105,6 +105,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
       const outcome = pnl > 0 ? "win" : pnl < 0 ? "loss" : status === "closed" ? "breakeven" : null;
       const session = detectSession(entryDate);
 
+      const positionId = cols[1]?.trim() ?? "";
       trades.push({
         accountId, symbol, direction, entryPrice, exitPrice,
         stopLoss: sl, takeProfit: tp, lotSize,
@@ -112,6 +113,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
         exitDate: exitDate?.toISOString() ?? null,
         commission, swap, pnl, status, outcome, session,
         rMultiple: null,
+        positionId: positionId || undefined,
       });
     }
 

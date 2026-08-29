@@ -18,13 +18,17 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.trade.findMany({
     where: { accountId },
-    select: { entryDate: true, symbol: true, lotSize: true },
+    select: { entryDate: true, symbol: true, lotSize: true, positionId: true },
   });
   const existingKeys = new Set(
     existing.map(t => `${t.symbol}|${t.lotSize}|${new Date(t.entryDate).getTime()}`)
   );
+  const existingPositionIds = new Set(
+    existing.filter((t: any) => t.positionId).map((t: any) => t.positionId)
+  );
 
   const newTrades = trades.filter((t: any) => {
+    if (t.positionId && existingPositionIds.has(t.positionId)) return false;
     const key = `${t.symbol}|${t.lotSize}|${new Date(t.entryDate).getTime()}`;
     return !existingKeys.has(key);
   });

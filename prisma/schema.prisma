@@ -83,6 +83,7 @@ model Trade {
   stopLoss         Float?
   takeProfit       Float?
   lotSize          Float
+  positionId       String?
   entryDate        DateTime
   exitDate         DateTime?
   commission       Float          @default(0)

@@ -44,13 +44,16 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
   function detectSession(date: Date): string {
     try {
-    const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000);
-    const hour = wib.getUTCHours();
-    if (hour >= 20 || hour < 4) return "newyork";
-    if (hour >= 16) return "london";
-    if (hour >= 7) return "asia";
-    if (hour >= 5) return "sydney";
-    return "newyork";
+      const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+      const hour = wib.getUTCHours();
+      if (hour >= 20 || hour < 4) return "newyork";
+      if (hour >= 16) return "london";
+      if (hour >= 7) return "asia";
+      if (hour >= 5) return "sydney";
+      return "newyork";
+    } catch {
+      return "newyork";
+    }
   }
 
   async function handleImport() {

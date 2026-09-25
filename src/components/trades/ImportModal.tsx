@@ -32,14 +32,18 @@ export default function ImportModal({ onClose, onImported }: Props) {
     return parseFloat(String(val).replace(/\s/g, "")) || 0;
   }
 
-  function parseDate(str: string): Date | null {
-    if (!str?.trim()) return null;
-    const dotFmt = str.match(/^(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
-    if (dotFmt) return new Date(`${dotFmt[1]}-${dotFmt[2]}-${dotFmt[3]}T${dotFmt[4]}`);
-    return new Date(str);
+  function parseDate(str: any): Date | null {
+    try {
+      if (!str || typeof str !== "string" || !str.trim()) return null;
+      const dotFmt = str.trim().match(/^(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}:\d{2}:\d{2})$/);
+      if (dotFmt) return new Date(`${dotFmt[1]}-${dotFmt[2]}-${dotFmt[3]}T${dotFmt[4]}`);
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? null : d;
+    } catch { return null; }
   }
 
   function detectSession(date: Date): string {
+    try {
     const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000);
     const hour = wib.getUTCHours();
     if (hour >= 20 || hour < 4) return "newyork";

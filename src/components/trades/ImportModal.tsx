@@ -94,7 +94,11 @@ export default function ImportModal({ onClose, onImported }: Props) {
       if (cols.length < 5) continue;
 
       const row: any = {};
-      headers.forEach((h, idx) => { row[h] = cols[idx] ?? ""; });
+      // Header seperti "Time" dan "Price" muncul 2x (open & close) di export MT4/MT5.
+      // Hanya ambil kemunculan pertama supaya open price/time tidak tertimpa close price/time.
+      headers.forEach((h, idx) => {
+        if (row[h] === undefined) row[h] = cols[idx] ?? "";
+      });
 
       const symbol = (row["Symbol"] ?? "").replace(/r$/, "").toUpperCase();
       const lotSize = parseNum(row["Volume"] ?? row["Size"]);
@@ -133,24 +137,6 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
     // Kirim dalam batch 50
     const BATCH = 50;
-    console.log('Total parsed trades:', trades.length, '| sample positionId:', trades[0]?.positionId);
-    console.log('dataStart:', dataStart, '| header line:', allLines[dataStart]?.slice(0, 50));
-    console.log('line 8 sample:', allLines[dataStart+2]?.slice(0, 60));
-    // Debug first few lines
-    let skipCount = 0, passCount = 0;
-    for (let di = dataStart + 1; di < Math.min(dataStart + 5, allLines.length); di++) {
-      const dl = allLines[di].replace(/\r$/, "").trim();
-      const dc = dl.split(",");
-      const dpId = dc[1]?.trim() ?? "";
-      const dType = dc[3]?.trim().toLowerCase() ?? "";
-      const dEntry = parseNum(dc[5]);
-      const dExit = parseNum(dc[9]);
-      const dateOk = /^\d{4}\.\d{2}\.\d{2}/.test(dl);
-      const posOk = /^\d{8,}$/.test(dpId);
-      const typeOk = !dType.includes("limit") && !dType.includes("stop");
-      const exitOk = !(dExit > 0 && Math.abs(dEntry - dExit) < 0.001);
-      console.log('line', di, '| dateOk:', dateOk, 'posOk:', posOk, 'typeOk:', typeOk, 'exitOk:', exitOk, '| entry:', dEntry, 'exit:', dExit);
-    }
     setProgress({ current: 0, total: trades.length });
     let totalImported = 0, totalSkipped = 0;
 

@@ -57,13 +57,6 @@ export default function ImportModal({ onClose, onImported }: Props) {
     const text = await file.text();
     const allLines = text.split(/\r?\n/);
 
-    // Handle deposit/withdraw dari Deals section dulu via server
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("accountId", accountId);
-    fd.append("dealsOnly", "true");
-    await fetch("/api/trades/import", { method: "POST", body: fd }).catch(() => {});
-
     // Parse Positions section di client
     let dataStart = 0;
     for (let i = 0; i < allLines.length; i++) {

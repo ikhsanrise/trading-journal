@@ -129,6 +129,21 @@ export default function ImportModal({ onClose, onImported }: Props) {
     console.log('Total parsed trades:', trades.length, '| sample positionId:', trades[0]?.positionId);
     console.log('dataStart:', dataStart, '| header line:', allLines[dataStart]?.slice(0, 50));
     console.log('line 8 sample:', allLines[dataStart+2]?.slice(0, 60));
+    // Debug first few lines
+    let skipCount = 0, passCount = 0;
+    for (let di = dataStart + 1; di < Math.min(dataStart + 5, allLines.length); di++) {
+      const dl = allLines[di].replace(/\r$/, "").trim();
+      const dc = dl.split(",");
+      const dpId = dc[1]?.trim() ?? "";
+      const dType = dc[3]?.trim().toLowerCase() ?? "";
+      const dEntry = parseNum(dc[5]);
+      const dExit = parseNum(dc[9]);
+      const dateOk = /^\d{4}\.\d{2}\.\d{2}/.test(dl);
+      const posOk = /^\d{8,}$/.test(dpId);
+      const typeOk = !dType.includes("limit") && !dType.includes("stop");
+      const exitOk = !(dExit > 0 && Math.abs(dEntry - dExit) < 0.001);
+      console.log('line', di, '| dateOk:', dateOk, 'posOk:', posOk, 'typeOk:', typeOk, 'exitOk:', exitOk, '| entry:', dEntry, 'exit:', dExit);
+    }
     setProgress({ current: 0, total: trades.length });
     let totalImported = 0, totalSkipped = 0;
 

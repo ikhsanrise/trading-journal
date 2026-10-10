@@ -435,45 +435,41 @@ export default function DashboardPage() {
     london: "London", newyork: "New York", asia: "Asia", sydney: "Sydney", unknown: "Unknown",
   };
 
+  const cur = data?.account?.currency ?? "USD";
+  const sym = cur === "IDR" ? "Rp" : "$";
+  const fmtK = (v: number) => {
+    const abs = Math.abs(v);
+    const sign = v >= 0 ? "+" : "-";
+    if (abs >= 1_000_000_000) return `${sign}${sym}${(abs/1_000_000_000).toFixed(1)}B`;
+    if (abs >= 1_000_000) return `${sign}${sym}${(abs/1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `${sign}${sym}${(abs/1_000).toFixed(0)}K`;
+    return formatCurrency(v, cur);
+  };
+
   return (
-    <div className="p-3 space-y-3">
-      {/* Top bar */}
+    <div className="p-4 space-y-4 min-h-screen">
+      {/* ── HEADER ── */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">Dashboard</span>
-          {/* Account Switcher Dropdown */}
+          <span className="text-sm font-bold tracking-tight">Dashboard</span>
           {data?.accounts && data.accounts.length > 0 && (
             <div className="relative">
-              <button
-                onClick={() => setAccountOpen(!accountOpen)}
-                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 transition-colors max-w-[160px]"
-              >
-                <span className="truncate">{data.account?.name ?? "Select Account"}</span>
-                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+              <button onClick={() => setAccountOpen(!accountOpen)}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 hover:border-indigo-400 transition-colors">
+                <span className="truncate max-w-[120px]">{data.account?.name ?? "Select"}</span>
+                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </button>
               {accountOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
-                  <div className="absolute left-0 top-8 z-50 min-w-[180px] border rounded-xl shadow-xl py-1 overflow-hidden" style={{ backgroundColor: "hsl(var(--card))" }}>
+                  <div className="absolute left-0 top-8 z-50 min-w-[180px] border rounded-xl shadow-2xl py-1 overflow-hidden" style={{ backgroundColor: "hsl(var(--card))" }}>
                     {data.accounts.map((acc: any) => (
-                      <button
-                        key={acc.id}
-                        onClick={() => {
-                          setSelectedAccountId(acc.id);
-                          setAccountOpen(false);
-                        }}
-                        className={cn(
-                          "w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
-                          (selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && "text-indigo-500 font-medium"
-                        )}
-                      >
+                      <button key={acc.id} onClick={() => { setSelectedAccountId(acc.id); setAccountOpen(false); }}
+                        className={cn("w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
+                          (selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && "text-indigo-400 font-medium")}>
                         <span className="truncate">{acc.name}</span>
                         {(selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && (
-                          <svg className="w-3 h-3 shrink-0 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
+                          <svg className="w-3 h-3 shrink-0 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                         )}
                       </button>
                     ))}
@@ -483,47 +479,151 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}
-              className={cn("text-[11px] px-2 py-1 rounded-lg transition-colors",
-                period === p.value ? "bg-indigo-600 text-white" : "border text-muted-foreground hover:text-foreground"
-              )}>{p.label}</button>
+              className={cn("text-[11px] px-2.5 py-1 rounded-lg transition-colors font-medium",
+                period === p.value ? "bg-indigo-600 text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+              {p.label}
+            </button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">Loading...</div>
+        <div className="h-64 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          </div>
+        </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Net P&L" value={stats ? formatCurrency(stats.netPnL, data?.account?.currency) : "—"} sub={`${stats?.closedTrades ?? 0} trades closed`} color={stats?.netPnL > 0 ? "text-[#16a34a]" : stats?.netPnL < 0 ? "text-[#dc2626]" : undefined} />
-            <StatCard label="Win Rate" value={stats ? `${stats.winRate.toFixed(1)}%` : "—"} sub={`of ${stats?.closedTrades ?? 0} trades`} />
-            <StatCard label="Avg R-Multiple" value={stats ? formatR(stats.avgR) : "—"} sub="per trade" color={stats?.avgR > 0 ? "text-[#16a34a]" : stats?.avgR < 0 ? "text-[#dc2626]" : undefined} />
-            <StatCard label="Profit Factor" value={stats ? stats.profitFactor.toFixed(2) : "—"} sub="gross win / loss" color={stats?.profitFactor >= 1 ? "text-[#16a34a]" : "text-[#dc2626]"} />
+          {/* ── ROW 1: KEY METRICS ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Net P&L - highlighted */}
+            <div className="lg:col-span-1 rounded-2xl p-4 border relative overflow-hidden"
+              style={{ background: stats?.netPnL >= 0 ? "linear-gradient(135deg, rgba(22,163,74,0.12), rgba(22,163,74,0.04))" : "linear-gradient(135deg, rgba(220,38,38,0.12), rgba(220,38,38,0.04))", borderColor: stats?.netPnL >= 0 ? "rgba(22,163,74,0.3)" : "rgba(220,38,38,0.3)" }}>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Net P&L</p>
+              <p className={cn("text-2xl font-bold tracking-tight", stats?.netPnL >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                {stats ? fmtK(stats.netPnL) : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">{stats?.closedTrades ?? 0} trades closed</p>
+            </div>
+
+            <div className="rounded-2xl p-4 border bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Win Rate</p>
+              <p className={cn("text-2xl font-bold", stats?.winRate >= 50 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                {stats ? `${stats.winRate.toFixed(1)}%` : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">of {stats?.closedTrades ?? 0} trades</p>
+            </div>
+
+            <div className="rounded-2xl p-4 border bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Profit Factor</p>
+              <p className={cn("text-2xl font-bold", stats?.profitFactor >= 1 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                {stats ? stats.profitFactor.toFixed(2) : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">gross win / loss</p>
+            </div>
+
+            <div className="rounded-2xl p-4 border bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Avg R-Multiple</p>
+              <p className={cn("text-2xl font-bold", (stats?.avgR ?? 0) > 0 ? "text-[#4ade80]" : "text-muted-foreground")}>
+                {stats ? formatR(stats.avgR) : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">per trade</p>
+            </div>
           </div>
 
+          {/* ── ROW 2: SECONDARY STATS ── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Best Day" value={bestDay ? formatCurrency(bestDay.pnl, data?.account?.currency) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#16a34a]" : undefined} />
-            <StatCard label="Worst Day" value={worstDay ? formatCurrency(worstDay.pnl, data?.account?.currency) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#dc2626]" : undefined} />
-            <StatCard label="Most Profitable Day" value={mostProfitableDoW ? DAYS_OF_WEEK_FULL[parseInt(mostProfitableDoW[0])] : "—"} sub={mostProfitableDoW ? formatCurrency(mostProfitableDoW[1].pnl, data?.account?.currency) : undefined} color="text-[#16a34a]" />
-            <StatCard label="Most Active Day" value={mostActiveDoW ? DAYS_OF_WEEK_FULL[parseInt(mostActiveDoW[0])] : "—"} sub={mostActiveDoW ? `${mostActiveDoW[1].count} total trades` : undefined} />
+            <StatCard label="Best Day" value={bestDay ? fmtK(bestDay.pnl) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#4ade80]" : undefined} />
+            <StatCard label="Worst Day" value={worstDay ? fmtK(worstDay.pnl) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#f87171]" : undefined} />
+            <StatCard label="Avg Win" value={stats?.avgWin != null ? fmtK(stats.avgWin) : "—"} sub="per winning trade" color="text-[#4ade80]" />
+            <StatCard label="Avg Loss" value={stats?.avgLoss != null ? fmtK(stats.avgLoss) : "—"} sub="per losing trade" color="text-[#f87171]" />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Avg Win" value={stats?.avgWin != null ? formatCurrency(stats.avgWin, data?.account?.currency) : "—"} sub="per winning trade" color="text-[#16a34a]" />
-            <StatCard label="Avg Loss" value={stats?.avgLoss != null ? formatCurrency(stats.avgLoss, data?.account?.currency) : "—"} sub="per losing trade" color="text-[#dc2626]" />
-            <StatCard label="Avg Trade Duration" value={avgDuration ?? "—"} sub="across recent trades" />
-            <StatCard label="Current Streak" value={stats?.streak ? `${stats.streak.current} ${stats.streak.type === 'win' ? '🔥' : '❄️'}` : "—"} sub={stats?.streak ? `Max win: ${stats.streak.maxWin} · Max loss: ${stats.streak.maxLoss}` : undefined} color={stats?.streak?.type === 'win' ? 'text-[#16a34a]' : 'text-[#dc2626]'} />
+          {/* ── ROW 3: CHART + QUICK STATS ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* Equity Curve - 2/3 width */}
+            <div className="lg:col-span-2 rounded-2xl border bg-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold">Equity Curve</p>
+                <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
+                  {(["daily","weekly","monthly"] as const).map(v => (
+                    <button key={v} onClick={() => setEquityView(v)}
+                      className={cn("text-[9px] px-2 py-0.5 rounded-md font-medium transition-colors capitalize",
+                        equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                      {v.slice(0,1).toUpperCase() + v.slice(1,3)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {cumulativeCurve.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.4} />
+                        <stop offset="100%" stopColor={CURVE_COLOR} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={48} axisLine={false} tickLine={false}
+                      tickFormatter={(v) => { const a = Math.abs(v); return a >= 1e9 ? `${sym}${(v/1e9).toFixed(1)}B` : a >= 1e6 ? `${sym}${(v/1e6).toFixed(1)}M` : a >= 1e3 ? `${sym}${(v/1e3).toFixed(0)}K` : `${sym}${v}`; }} />
+                    <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 2" />
+                    <Tooltip formatter={(v: number) => [formatCurrency(v, cur, true), "Equity"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "rgba(255,255,255,0.5)" }} itemStyle={{ color: CURVE_COLOR }} />
+                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#eqGrad)" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR, strokeWidth: 0 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>}
+            </div>
+
+            {/* Side stats - 1/3 width */}
+            <div className="flex flex-col gap-2">
+              {/* Session breakdown */}
+              <div className="rounded-2xl border bg-card p-4 flex-1">
+                <p className="text-xs font-semibold mb-2">By Session</p>
+                <div className="space-y-2">
+                  {bySession.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
+                  {bySession.slice(0, 4).map((s: any) => (
+                    <div key={s.session} className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground w-16 truncate capitalize">{sessionLabel[s.session] ?? s.session}</span>
+                      <div className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-indigo-500" style={{ width: `${s.winRate}%` }} />
+                      </div>
+                      <span className="text-[10px] font-medium w-8 text-right">{s.winRate}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Streak + Duration */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-2xl border bg-card p-3">
+                  <p className="text-[10px] text-muted-foreground mb-1">Streak</p>
+                  <p className={cn("text-lg font-bold", stats?.streak?.type === "win" ? "text-[#4ade80]" : "text-[#f87171]")}>
+                    {stats?.streak ? `${stats.streak.current}${stats.streak.type === "win" ? "🔥" : "❄️"}` : "—"}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground">Max W:{stats?.streak?.maxWin ?? 0} L:{stats?.streak?.maxLoss ?? 0}</p>
+                </div>
+                <div className="rounded-2xl border bg-card p-3">
+                  <p className="text-[10px] text-muted-foreground mb-1">Avg Hold</p>
+                  <p className="text-lg font-bold">{avgDuration ?? "—"}</p>
+                  <p className="text-[9px] text-muted-foreground">per trade</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Earnings + Monthly Goal */}
+          {/* ── ROW 4: EARNINGS + GOAL ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Earnings Card */}
-            <div className="bg-card border rounded-xl p-4">
+            {/* Earnings */}
+            <div className="rounded-2xl border bg-card p-4">
               <p className="text-xs font-semibold mb-3">Earnings</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: "Today", pnl: todayPnl, prev: prevDayPnl },
                   { label: "This Week", pnl: weekPnl, prev: prevWeekPnl },
@@ -531,14 +631,12 @@ export default function DashboardPage() {
                 ].map(({ label, pnl, prev }) => {
                   const pct = pctChange(pnl, prev);
                   return (
-                    <div key={label} className="bg-muted/40 rounded-lg p-3">
-                      <p className="text-[10px] text-muted-foreground mb-1">{label}</p>
-                      <p className={`text-xs font-bold ${pnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-                        {formatCurrency(pnl, data?.account?.currency)}
-                      </p>
+                    <div key={label} className="bg-muted/30 rounded-xl p-2.5">
+                      <p className="text-[9px] text-muted-foreground mb-1 uppercase tracking-wide">{label}</p>
+                      <p className={cn("text-xs font-bold", pnl >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>{fmtK(pnl)}</p>
                       {pct !== null && (
-                        <p className={`text-[10px] mt-0.5 font-medium ${pct >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-                          {pct >= 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}% vs prev
+                        <p className={cn("text-[9px] mt-0.5", pct >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                          {pct >= 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}%
                         </p>
                       )}
                     </div>
@@ -547,303 +645,142 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Monthly Goal Card */}
-            <div className="bg-card border rounded-xl p-4">
+            {/* Monthly Goal */}
+            <div className="rounded-2xl border bg-card p-4">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold">Monthly Profit Goal</p>
+                <p className="text-xs font-semibold">Monthly Goal</p>
                 <button onClick={() => { setEditingGoal(true); setGoalInput(String(monthlyGoal || "")); }}
-                  className="text-[10px] text-indigo-500 hover:underline">
-                  {monthlyGoal > 0 ? "Edit" : "Set Goal"}
-                </button>
+                  className="text-[10px] text-indigo-400 hover:underline">{monthlyGoal > 0 ? "Edit" : "Set Goal"}</button>
               </div>
               {editingGoal ? (
                 <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="number"
-                    value={goalInput}
-                    onChange={e => setGoalInput(e.target.value)}
-                    placeholder="e.g. 10000000"
-                    className="flex-1 text-xs border rounded-lg px-2 py-1.5 bg-background"
-                  />
-                  <button onClick={saveGoal} disabled={savingGoal}
-                    className="text-[10px] px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                    {savingGoal ? "..." : "Save"}
-                  </button>
-                  <button onClick={() => setEditingGoal(false)} className="text-[10px] text-muted-foreground hover:text-foreground">Cancel</button>
+                  <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)} placeholder="e.g. 10000000"
+                    className="flex-1 text-xs border rounded-xl px-2 py-1.5 bg-background" />
+                  <button onClick={saveGoal} disabled={savingGoal} className="text-[10px] px-2.5 py-1.5 bg-indigo-600 text-white rounded-xl disabled:opacity-50">{savingGoal ? "..." : "Save"}</button>
+                  <button onClick={() => setEditingGoal(false)} className="text-[10px] text-muted-foreground">✕</button>
                 </div>
               ) : monthlyGoal > 0 ? (
-                <div className="flex flex-col items-center">
-                  {/* Gauge setengah lingkaran */}
-                  <div className="relative w-40 h-20 mt-1">
-                    <svg viewBox="0 0 160 80" className="w-full h-full">
-                      <defs>
-                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                          <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                          </feMerge>
-                        </filter>
-                      </defs>
-                      {/* Track */}
-                      <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke="hsl(var(--muted))" strokeWidth="14" strokeLinecap="round" />
-                      {/* Fill with glow */}
-                      <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none"
-                        stroke={goalPct >= 100 ? "#4ade80" : "#818cf8"}
-                        strokeWidth="14" strokeLinecap="round"
-                        strokeDasharray={`${Math.min(goalPct, 100) * 2.198} 219.8`}
-                        filter="url(#glow)"
-                        style={{ transition: "stroke-dasharray 0.6s ease" }}
-                      />
-                      {/* Percentage text */}
-                      <text x="80" y="68" textAnchor="middle" fontSize="18" fontWeight="bold"
-                        fill={goalPct >= 100 ? "#4ade80" : "#818cf8"}>
-                        {goalPct.toFixed(0)}%
-                      </text>
-                      <text x="80" y="80" textAnchor="middle" fontSize="8"
-                        fill="hsl(var(--muted-foreground))">of goal</text>
+                <div className="flex items-center gap-4">
+                  <div className="relative w-28 h-14">
+                    <svg viewBox="0 0 120 60" className="w-full h-full">
+                      <defs><filter id="glow2"><feGaussianBlur stdDeviation="3" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+                      <path d="M 8 60 A 52 52 0 0 1 112 60" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" strokeLinecap="round"/>
+                      <path d="M 8 60 A 52 52 0 0 1 112 60" fill="none" stroke={goalPct >= 100 ? "#4ade80" : "#818cf8"} strokeWidth="10" strokeLinecap="round"
+                        strokeDasharray={`${Math.min(goalPct,100)*1.634} 163.4`} filter="url(#glow2)"/>
+                      <text x="60" y="52" textAnchor="middle" fontSize="13" fontWeight="bold" fill={goalPct >= 100 ? "#4ade80" : "#818cf8"}>{goalPct.toFixed(0)}%</text>
                     </svg>
                   </div>
-                  <div className="flex justify-between w-full text-[10px] text-muted-foreground mt-1">
-                    <span>{formatCurrency(monthPnl, data?.account?.currency)}</span>
-                    <span>Goal: {formatCurrency(monthlyGoal, data?.account?.currency, false)}</span>
+                  <div className="flex-1">
+                    <p className={cn("text-sm font-bold", monthPnl >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>{fmtK(monthPnl)}</p>
+                    <p className="text-[10px] text-muted-foreground">of {formatCurrency(monthlyGoal, cur, false)}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{goalPct >= 100 ? "🎉 Achieved!" : `${fmtK(monthlyGoal - monthPnl).replace("+","")} left`}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {goalPct >= 100 ? "🎉 Goal achieved!" : `${formatCurrency(monthlyGoal - monthPnl, data?.account?.currency, false)} remaining`}
-                  </p>
                 </div>
               ) : (
-                <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">
-                  Set a monthly profit goal to track your progress
-                </div>
+                <div className="h-16 flex items-center justify-center text-xs text-muted-foreground">Set a monthly profit goal</div>
               )}
             </div>
           </div>
 
-          {/* Deposit & Withdraw Card */}
-          <div className="bg-card border rounded-xl p-4">
+          {/* ── ROW 5: CALENDAR + RECENT TRADES ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+            <div className="lg:col-span-3">
+              <CalendarHeatmap calendarData={calendar} currency={data?.account?.currency} />
+            </div>
+            <div className="rounded-2xl border bg-card p-4 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold">Recent Trades</p>
+                <Link href="/trades" className="text-[10px] text-indigo-400 hover:underline">View all →</Link>
+              </div>
+              <div className="space-y-0 flex-1 overflow-y-auto">
+                {recentTrades.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-4 text-center">No trades yet</p>
+                ) : recentTrades.map((t: any) => (
+                  <div key={t.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-[11px] font-semibold">{t.symbol}</p>
+                      <p className="text-[9px] text-muted-foreground">{format(new Date(t.entryDate), "dd MMM")}</p>
+                    </div>
+                    {t.pnl !== null ? (
+                      <span className={cn("text-[11px] font-bold px-1.5 py-0.5 rounded-md",
+                        t.pnl > 0 ? "bg-[#16a34a]/20 text-[#4ade80]" : t.pnl < 0 ? "bg-[#dc2626]/20 text-[#f87171]" : "bg-muted text-muted-foreground")}>
+                        {fmtK(t.pnl)}
+                      </span>
+                    ) : <span className="text-[10px] text-muted-foreground">open</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── ROW 6: DEPOSIT & WITHDRAW ── */}
+          <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold">Deposit & Withdraw</p>
-              <button onClick={() => setShowTxModal(true)}
-                className="text-[10px] px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                + Add
-              </button>
+              <button onClick={() => setShowTxModal(true)} className="text-[10px] px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">+ Add</button>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-[#16a34a]/10 rounded-xl p-3">
+              <div className="rounded-xl p-3 bg-[#16a34a]/10 border border-[#16a34a]/20">
                 <p className="text-[10px] text-muted-foreground mb-1">Total Deposit</p>
-                <p className="text-sm font-bold text-[#16a34a]">
-                  {formatCurrency(data?.account?.totalDeposit ?? 0, data?.account?.currency, false)}
-                </p>
+                <p className="text-sm font-bold text-[#4ade80]">{formatCurrency(data?.account?.totalDeposit ?? 0, cur, false)}</p>
               </div>
-              <div className="bg-[#dc2626]/10 rounded-xl p-3">
+              <div className="rounded-xl p-3 bg-[#dc2626]/10 border border-[#dc2626]/20">
                 <p className="text-[10px] text-muted-foreground mb-1">Total Withdraw</p>
-                <p className="text-sm font-bold text-[#dc2626]">
-                  {formatCurrency(data?.account?.totalWithdraw ?? 0, data?.account?.currency, false)}
-                </p>
+                <p className="text-sm font-bold text-[#f87171]">{formatCurrency(data?.account?.totalWithdraw ?? 0, cur, false)}</p>
               </div>
             </div>
-            {/* Transaction history */}
             {txList.length > 0 && (
-              <div className="space-y-1 max-h-36 overflow-y-auto">
+              <div className="space-y-1 max-h-32 overflow-y-auto">
                 {txList.slice(0, 5).map((tx: any) => (
                   <div key={tx.id} className="flex items-center justify-between py-1.5 border-b last:border-0">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${tx.type === "deposit" ? "bg-[#16a34a]/20 text-[#16a34a]" : "bg-[#dc2626]/20 text-[#dc2626]"}`}>
+                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", tx.type === "deposit" ? "bg-[#16a34a]/20 text-[#4ade80]" : "bg-[#dc2626]/20 text-[#f87171]")}>
                         {tx.type === "deposit" ? "DEP" : "WDR"}
                       </span>
                       <div>
-                        <p className="text-[10px] font-medium">{formatCurrency(tx.amount, data?.account?.currency, false)}</p>
+                        <p className="text-[10px] font-medium">{formatCurrency(tx.amount, cur, false)}</p>
                         {tx.note && <p className="text-[9px] text-muted-foreground">{tx.note}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-[9px] text-muted-foreground">{new Date(tx.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}</p>
-                      <button onClick={() => deleteTx(tx.id)} className="text-muted-foreground hover:text-[#dc2626] transition-colors text-[10px]">✕</button>
+                      <button onClick={() => deleteTx(tx.id)} className="text-muted-foreground hover:text-[#f87171] text-[10px]">✕</button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            {txList.length === 0 && (
-              <p className="text-[11px] text-muted-foreground text-center py-2">No transactions yet</p>
-            )}
-          </div>
-
-          {/* Add Transaction Modal */}
-          {showTxModal && (
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowTxModal(false)}>
-              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-              <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-semibold">Add Transaction</p>
-                  <button onClick={() => setShowTxModal(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground">✕</button>
-                </div>
-                {/* Type selector */}
-                <div className="flex gap-2 mb-4">
-                  {(["deposit", "withdraw"] as const).map(t => (
-                    <button key={t} onClick={() => setTxType(t)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors capitalize ${txType === t ? t === "deposit" ? "bg-[#16a34a] text-white" : "bg-[#dc2626] text-white" : "bg-muted text-muted-foreground"}`}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Amount ({data?.account?.currency})</label>
-                    <input type="number" value={txAmount} onChange={e => setTxAmount(e.target.value)}
-                      placeholder="0" className="w-full mt-1 text-sm border rounded-xl px-3 py-2 bg-background" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Note (optional)</label>
-                    <input type="text" value={txNote} onChange={e => setTxNote(e.target.value)}
-                      placeholder="e.g. Initial deposit" className="w-full mt-1 text-xs border rounded-xl px-3 py-2 bg-background" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Date (optional)</label>
-                    <input type="date" value={txDate} onChange={e => setTxDate(e.target.value)}
-                      className="w-full mt-1 text-xs border rounded-xl px-3 py-2 bg-background" />
-                  </div>
-                </div>
-                <button onClick={saveTx} disabled={savingTx || !txAmount}
-                  className="w-full mt-4 py-2.5 bg-indigo-600 text-white text-xs font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-                  {savingTx ? "Saving..." : `Add ${txType}`}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="bg-card border rounded-xl p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-medium">Daily Net Cumulative P&L</p>
-                  <Info className="w-3 h-3 text-muted-foreground" />
-                </div>
-                <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
-                  {(["daily","weekly","monthly"] as const).map(v => (
-                    <button key={v} onClick={() => setEquityView(v)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-medium transition-colors capitalize ${equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                    >{v.slice(0,1).toUpperCase() + v.slice(1,3)}</button>
-                  ))}
-                </div>
-              </div>
-              {cumulativeCurve.length > 0 ? (
-                <ResponsiveContainer width="100%" height={140}>
-                  <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="pnlGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.3} />
-                        <stop offset="100%" stopColor={CURVE_COLOR} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? "USD"; const sym = cur === "IDR" ? "Rp" : "$"; return Math.abs(v) >= 1000000 ? `${sym}${(v/1000000).toFixed(1)}M` : Math.abs(v) >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
-                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="4 2" />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Cumulative P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "hsl(var(--muted-foreground))" }} itemStyle={{ color: "hsl(var(--foreground))" }} />
-                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#pnlGrad)" dot={{ r: 3, fill: CURVE_COLOR }} activeDot={{ r: 5 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
-              )}
-            </div>
-
-            <div className="bg-card border rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-2">
-                <p className="text-xs font-medium">Net Daily P&L</p>
-                <Info className="w-3 h-3 text-muted-foreground" />
-              </div>
-              {dailyBarData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={dailyBarData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={44} axisLine={false} tickLine={false} tickFormatter={(v) => { const cur = data?.account?.currency ?? 'USD'; const sym = cur === 'IDR' ? 'Rp' : '$'; return v >= 1000 ? `${sym}${(v/1000).toFixed(0)}K` : `${sym}${v}`; }} />
-                    <ReferenceLine y={0} stroke="hsl(var(--border))" />
-                    <Tooltip formatter={(v: number) => [formatCurrency(v, data?.account?.currency ?? "USD", true), "Daily P&L"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} itemStyle={{ color: 'hsl(var(--foreground))' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-                    <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
-                      {dailyBarData.map((entry: any, i: number) => (
-                        <Cell key={i} fill={entry.pnl >= 0 ? "#16a34a" : "#dc2626"} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-32 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>
-              )}
-            </div>
-
-            <div className="bg-card border rounded-xl p-3">
-              <p className="text-xs font-medium mb-2">Win Rate by Instrument</p>
-              <div className="space-y-2">
-                {bySymbol.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
-                {bySymbol.slice(0, 4).map((s: any) => (
-                  <div key={s.symbol} className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground w-14 truncate">{s.symbol}</span>
-                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${s.winRate}%`, background: "#16a34a" }} />
-                    </div>
-                    <span className="text-[11px] font-medium w-8 text-right">{s.winRate}%</span>
-                  </div>
-                ))}
-              </div>
-              {bySession.length > 0 && (
-                <>
-                  <div className="border-t my-2" />
-                  <p className="text-xs font-medium mb-2">By Session</p>
-                  <div className="space-y-2">
-                    {bySession.map((s: any) => (
-                      <div key={s.session} className="flex items-center gap-2">
-                        <span className="text-[11px] text-muted-foreground w-14 truncate">{sessionLabel[s.session] ?? s.session}</span>
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${s.winRate}%`, background: "#6366f1" }} />
-                        </div>
-                        <span className="text-[11px] font-medium w-8 text-right">{s.winRate}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Desktop: side by side, Mobile: stacked */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
-            <div className="lg:col-span-3">
-              <CalendarHeatmap calendarData={calendar} currency={data?.account?.currency} />
-            </div>
-            <div className="bg-card border rounded-xl p-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium">Recent Trades</p>
-              <Link href="/trades" className="text-[11px] text-indigo-600 hover:underline">View all ↗</Link>
-            </div>
-            <div className="grid grid-cols-2 text-[10px] text-muted-foreground border-b pb-1 mb-1">
-              <span>Symbol</span><span className="text-right">Net P&L</span>
-            </div>
-            {recentTrades.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">No trades yet</p>
-            ) : recentTrades.map((t: any) => (
-              <div key={t.id} className="grid grid-cols-2 items-center py-1.5 border-b last:border-0">
-                <div>
-                  <p className="text-[11px] font-medium">{t.symbol}</p>
-                  <p className="text-[10px] text-muted-foreground">{format(new Date(t.entryDate), "MM-dd-yyyy")}</p>
-                </div>
-                <div className="text-right">
-                  {t.pnl !== null ? (
-                    <span className={cn("text-[11px] font-semibold", t.pnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>
-                      {formatCurrency(t.pnl, data?.account?.currency)}
-                    </span>
-                  ) : <span className="text-[10px] text-muted-foreground">open</span>}
-                </div>
-              </div>
-            ))}
-            </div>
           </div>
         </>
+      )}
+
+      {/* Add Transaction Modal */}
+      {showTxModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowTxModal(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-semibold mb-4">Add Transaction</p>
+            <div className="flex gap-2 mb-4">
+              {(["deposit","withdraw"] as const).map(t => (
+                <button key={t} onClick={() => setTxType(t)}
+                  className={cn("flex-1 py-2 rounded-xl text-xs font-medium capitalize transition-colors", txType === t ? t === "deposit" ? "bg-[#16a34a] text-white" : "bg-[#dc2626] text-white" : "bg-muted text-muted-foreground")}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-3">
+              <div><label className="text-[10px] text-muted-foreground">Amount ({cur})</label>
+                <input type="number" value={txAmount} onChange={e => setTxAmount(e.target.value)} placeholder="0" className="w-full mt-1 text-sm border rounded-xl px-3 py-2 bg-background" /></div>
+              <div><label className="text-[10px] text-muted-foreground">Note (optional)</label>
+                <input type="text" value={txNote} onChange={e => setTxNote(e.target.value)} placeholder="e.g. Initial deposit" className="w-full mt-1 text-xs border rounded-xl px-3 py-2 bg-background" /></div>
+              <div><label className="text-[10px] text-muted-foreground">Date (optional)</label>
+                <input type="date" value={txDate} onChange={e => setTxDate(e.target.value)} className="w-full mt-1 text-xs border rounded-xl px-3 py-2 bg-background" /></div>
+            </div>
+            <button onClick={saveTx} disabled={savingTx || !txAmount} className="w-full mt-4 py-2.5 bg-indigo-600 text-white text-xs font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+              {savingTx ? "Saving..." : `Add ${txType}`}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

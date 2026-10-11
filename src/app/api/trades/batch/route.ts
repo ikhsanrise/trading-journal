@@ -18,23 +18,29 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.trade.findMany({
     where: { accountId },
-    select: { entryDate: true, symbol: true, lotSize: true, positionId: true },
+    select: { positionId: true, symbol: true, lotSize: true, entryDate: true },
   });
-  const existingKeys = new Set(
-    existing.map(t => `${t.symbol}|${t.lotSize}|${new Date(t.entryDate).getTime()}`)
+  const knownPositions = new Set(
+    existing.map((t) => t.positionId).filter(Boolean) as string[]
   );
-  const existingPositionIds = new Set(
-    existing.filter((t: any) => t.positionId).map((t: any) => t.positionId)
+  const knownKeys = new Set(
+    existing.map((t) => `${t.symbol}|${t.lotSize}|${new Date(t.entryDate).getTime()}`)
   );
 
+  // Jika ada positionId, itu satu-satunya patokan duplikat.
+  // Trade hedge dengan detik & lot sama tapi positionId beda adalah trade yang valid.
+  const seen = new Set<string>();
   const newTrades = trades.filter((t: any) => {
-    if (t.positionId && existingPositionIds.has(t.positionId)) return false;
-    const key = `${t.symbol}|${t.lotSize}|${new Date(t.entryDate).getTime()}`;
-    return !existingKeys.has(key);
+    if (t.positionId) {
+      if (knownPositions.has(t.positionId) || seen.has(t.positionId)) return false;
+      seen.add(t.positionId);
+      return true;
+    }
+    return !knownKeys.has(`${t.symbol}|${t.lotSize}|${new Date(t.entryDate).getTime()}`);
   });
 
   if (newTrades.length > 0) {
-    await prisma.trade.createMany({ data: newTrades, skipDuplicates: true });
+    await prisma.trade.createMany({ data: newTrades });
     const totalPnl = newTrades.reduce((s: number, t: any) => s + (t.pnl || 0), 0);
     if (totalPnl !== 0) {
       await prisma.tradingAccount.update({

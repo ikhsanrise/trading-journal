@@ -127,3 +127,47 @@
   .anim-up, .anim-fade, .anim-pop, .page-enter, .stagger > *, .skeleton { animation: none !important; }
   .card-hover, .cal-cell, .row-hover { transition: none !important; }
 }
+
+/* ── motion v2 ── */
+@keyframes revealUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes revealFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* wrapper hanya fade; tiap blok di dalam halaman masuk bertahap saat mount (termasuk data yang datang setelah fetch) */
+.page-enter { animation: revealFade .2s ease backwards; }
+.page-enter > div > *:not(.fixed) { animation: revealUp .5s cubic-bezier(.22,1,.36,1) backwards; }
+.page-enter > div > *:nth-child(1) { animation-delay: 0.00s; }
+.page-enter > div > *:nth-child(2) { animation-delay: 0.05s; }
+.page-enter > div > *:nth-child(3) { animation-delay: 0.10s; }
+.page-enter > div > *:nth-child(4) { animation-delay: 0.15s; }
+.page-enter > div > *:nth-child(5) { animation-delay: 0.20s; }
+.page-enter > div > *:nth-child(6) { animation-delay: 0.25s; }
+.page-enter > div > *:nth-child(7) { animation-delay: 0.30s; }
+.page-enter > div > *:nth-child(8) { animation-delay: 0.35s; }
+.page-enter > div > *:nth-child(9) { animation-delay: 0.40s; }
+.page-enter > div > *:nth-child(10) { animation-delay: 0.45s; }
+.page-enter > div > *:nth-child(n+11) { animation-delay: .45s; }
+tbody > tr:nth-child(1) { animation-delay: 0.000s; }
+tbody > tr:nth-child(2) { animation-delay: 0.030s; }
+tbody > tr:nth-child(3) { animation-delay: 0.060s; }
+tbody > tr:nth-child(4) { animation-delay: 0.090s; }
+tbody > tr:nth-child(5) { animation-delay: 0.120s; }
+tbody > tr:nth-child(6) { animation-delay: 0.150s; }
+tbody > tr:nth-child(7) { animation-delay: 0.180s; }
+tbody > tr:nth-child(8) { animation-delay: 0.210s; }
+tbody > tr:nth-child(9) { animation-delay: 0.240s; }
+tbody > tr:nth-child(10) { animation-delay: 0.270s; }
+tbody > tr:nth-child(11) { animation-delay: 0.300s; }
+tbody > tr:nth-child(12) { animation-delay: 0.330s; }
+tbody > tr:nth-child(13) { animation-delay: 0.360s; }
+tbody > tr:nth-child(14) { animation-delay: 0.390s; }
+tbody > tr:nth-child(15) { animation-delay: 0.420s; }
+tbody > tr:nth-child(16) { animation-delay: 0.450s; }
+tbody > tr:nth-child(n+17) { animation-delay: .5s; }
+
+/* baris tabel (Trade Log, Analytics, dll) */
+tbody > tr { animation: rowIn .35s cubic-bezier(.22,1,.36,1) backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter, .page-enter > div > *, tbody > tr { animation: none !important; }
+}

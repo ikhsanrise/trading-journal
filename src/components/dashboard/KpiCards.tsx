@@ -2,20 +2,21 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 const GREEN = "#4ade80";
 const RED = "#f87171";
 const BLUE = "#60a5fa";
+const AMBER = "#facc15";
 
 /* Batas skala Trade Score (skor 100 / 0 tercapai di nilai ini) — ubah sesuai selera */
 const SCORE_CFG = {
-  winRateFull: 60,      // win rate (%) yang dianggap skor 100
-  profitFactorFull: 3,  // profit factor yang dianggap skor 100
-  avgWinLossFull: 3,    // rasio avg win / avg loss yang dianggap skor 100
-  recoveryFull: 3,      // net profit / max drawdown yang dianggap skor 100
-  drawdownZeroAt: 50,   // max drawdown (% dari total deposit) yang dianggap skor 0
-  consistencyFull: 60,  // % hari profit yang dianggap skor 100
+  winRateFull: 60,
+  profitFactorFull: 3,
+  avgWinLossFull: 3,
+  recoveryFull: 3,
+  drawdownZeroAt: 50,
+  consistencyFull: 60,
 };
 
 function useCountUp(target: number, ms = 900) {
@@ -48,16 +49,42 @@ function plural(n: number, unit: string) {
   return `${n} ${unit}${n === 1 ? "" : "s"}`;
 }
 
-function Card({ title, info, children, className }: { title: string; info: string; children: ReactNode; className?: string }) {
+type Row = { label: string; value: string; color?: string };
+
+/* panel detail yang muncul saat cursor di atas kartu */
+function Detail({ title, rows, note, align = "left" }: { title: string; rows: Row[]; note?: string; align?: "left" | "right" }) {
   return (
-    <div className={cn("rounded-2xl border bg-card p-4 card-hover flex flex-col justify-between min-h-[128px]", className)}>
+    <div
+      className={cn(
+        "pointer-events-none absolute top-full mt-2 z-40 w-72 max-w-full rounded-xl border p-3 shadow-2xl",
+        "opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0",
+        align === "right" ? "right-0" : "left-0"
+      )}
+      style={{ backgroundColor: "#0f0f1a", borderColor: "rgba(255,255,255,0.12)" }}
+    >
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{title}</p>
+      <div className="space-y-1.5">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between gap-3 text-[11px]">
+            <span className="text-muted-foreground">{r.label}</span>
+            <span className="font-semibold text-right" style={r.color ? { color: r.color } : undefined}>{r.value}</span>
+          </div>
+        ))}
+      </div>
+      {note && <p className="text-[10px] text-muted-foreground/80 mt-2 pt-2 border-t border-white/10 leading-snug">{note}</p>}
+    </div>
+  );
+}
+
+function Card({ title, detail, children, className }: { title: string; detail?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("group relative hover:z-30 rounded-2xl border bg-card p-4 card-hover flex flex-col justify-between min-h-[128px]", className)}>
       <div className="flex items-center gap-1.5">
         <p className="text-xs text-muted-foreground">{title}</p>
-        <span title={info} className="cursor-help text-muted-foreground/60 hover:text-foreground transition-colors">
-          <Info className="w-3 h-3" />
-        </span>
+        <Info className="w-3 h-3 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
       </div>
       {children}
+      {detail}
     </div>
   );
 }
@@ -82,13 +109,15 @@ function arc(cx: number, cy: number, r: number, f0: number, f1: number) {
 }
 
 /* ── 1. Trade win % ── */
-function WinCard({ stats }: { stats: any }) {
+function WinCard({ stats, cur }: { stats: any; cur: string }) {
   const closed = stats?.closedTrades ?? 0;
   const winRate = stats?.winRate ?? 0;
   const win = stats?.winCount ?? Math.round((winRate / 100) * closed);
   const be = stats?.beCount ?? 0;
   const loss = stats?.lossCount ?? Math.max(0, closed - win - be);
   const total = win + be + loss;
+  const expectancy = closed > 0 ? (stats?.netPnL ?? 0) / closed : 0;
+  const pct = (n: number) => `${total > 0 ? ((n / total) * 100).toFixed(1) : "0.0"}%`;
   const shown = useCountUp(winRate);
 
   const segs = [
@@ -106,7 +135,22 @@ function WinCard({ stats }: { stats: any }) {
   });
 
   return (
-    <Card title="Trade win %" info="Persentase trade yang berakhir profit. Busur: hijau = win, biru = breakeven, merah = loss.">
+    <Card
+      title="Trade win %"
+      detail={
+        <Detail
+          title="Rincian win rate"
+          rows={[
+            { label: "Win", value: `${win} · ${pct(win)}`, color: GREEN },
+            { label: "Breakeven", value: `${be} · ${pct(be)}`, color: BLUE },
+            { label: "Loss", value: `${loss} · ${pct(loss)}`, color: RED },
+            { label: "Trade closed", value: `${closed}` },
+            { label: "Expectancy / trade", value: formatCurrency(expectancy, cur), color: expectancy >= 0 ? GREEN : RED },
+          ]}
+          note="Persentase trade yang berakhir profit. Expectancy = Net P&L dibagi jumlah trade."
+        />
+      }
+    >
       <div className="flex items-end justify-between gap-3 mt-2">
         <p className="text-3xl font-bold tracking-tight">{stats ? `${shown.toFixed(2)}%` : "—"}</p>
         <div className="flex flex-col items-center">
@@ -136,9 +180,26 @@ function AvgCard({ stats, cur }: { stats: any; cur: string }) {
   const greenPct = sum > 0 ? (avgWin / sum) * 100 : 50;
   const shown = useCountUp(ratio);
   const has = stats?.avgWin != null && stats?.avgLoss != null;
+  const winRate = stats?.winRate ?? 0;
+  const beRate = 100 / (1 + ratio);
 
   return (
-    <Card title="Avg win/loss trade" info="Rata-rata profit trade menang dibanding rata-rata kerugian trade kalah. Di atas 1 berarti win rata-rata lebih besar dari loss rata-rata.">
+    <Card
+      title="Avg win/loss trade"
+      detail={
+        <Detail
+          title="Rincian rata-rata"
+          rows={[
+            { label: "Rata-rata win", value: formatCurrency(avgWin, cur, false), color: GREEN },
+            { label: "Rata-rata loss", value: formatCurrency(avgLoss, cur), color: RED },
+            { label: "Rasio win/loss", value: has ? ratio.toFixed(2) : "—" },
+            { label: "Win rate impas", value: has ? `${beRate.toFixed(1)}%` : "—" },
+            { label: "Win rate kamu", value: `${winRate.toFixed(1)}%`, color: winRate >= beRate ? GREEN : RED },
+          ]}
+          note="Win rate impas = win rate minimal agar tidak rugi dengan rasio ini. Selama win rate kamu di atasnya, strategi profit."
+        />
+      }
+    >
       <div className="flex items-end justify-between gap-4 mt-2">
         <p className="text-3xl font-bold tracking-tight">{has ? shown.toFixed(2) : "—"}</p>
         <div className="flex-1 min-w-[96px] max-w-[190px] pb-1">
@@ -157,7 +218,7 @@ function AvgCard({ stats, cur }: { stats: any; cur: string }) {
 }
 
 /* ── 3. Profit factor ── */
-function PFCard({ stats }: { stats: any }) {
+function PFCard({ stats, cur }: { stats: any; cur: string }) {
   const pf = stats?.profitFactor ?? 0;
   const has = (stats?.closedTrades ?? 0) > 0;
   const inf = pf >= 999;
@@ -165,9 +226,25 @@ function PFCard({ stats }: { stats: any }) {
   const rf = has ? 1 - gf : 0;
   const gap = gf > 0 && rf > 0 ? 0.02 : 0;
   const shown = useCountUp(inf ? 0 : pf);
+  const gp = stats?.grossProfit ?? (stats?.winCount ?? 0) * (stats?.avgWin ?? 0);
+  const gl = stats?.grossLoss ?? (stats?.lossCount ?? 0) * Math.abs(stats?.avgLoss ?? 0);
 
   return (
-    <Card title="Profit factor" info="Total profit kotor dibagi total loss kotor. Di atas 1 berarti profit lebih besar dari loss. Cincin hijau = porsi profit, merah = porsi loss.">
+    <Card
+      title="Profit factor"
+      detail={
+        <Detail
+          title="Rincian profit factor"
+          rows={[
+            { label: "Gross profit", value: formatCurrency(gp, cur, false), color: GREEN },
+            { label: "Gross loss", value: formatCurrency(-gl, cur), color: RED },
+            { label: "Selisih (net)", value: formatCurrency(gp - gl, cur), color: gp - gl >= 0 ? GREEN : RED },
+            { label: "Profit factor", value: !has ? "—" : inf ? "∞" : pf.toFixed(2) },
+          ]}
+          note="Total profit kotor dibagi total loss kotor. Di atas 1 berarti profit lebih besar dari loss. Cincin: hijau = porsi profit, merah = porsi loss."
+        />
+      }
+    >
       <div className="flex items-end justify-between gap-3 mt-2">
         <p className="text-3xl font-bold tracking-tight">{!has ? "—" : inf ? "∞" : shown.toFixed(2)}</p>
         <svg viewBox="0 0 72 72" className="w-[72px] h-[72px] ring-in">
@@ -220,8 +297,27 @@ function StreakCol({ heading, cur, type, maxWin, maxLoss, unit }: { heading: str
 function StreakCard({ stats, calendar }: { stats: any; calendar: any[] }) {
   const d = dayStreak(calendar);
   const t = stats?.streak;
+  const now = (n: number, type: string, unit: string) =>
+    type === "none" ? "—" : `${plural(n, unit)} ${type === "win" ? "menang" : "kalah"}`;
   return (
-    <Card title="Current streak" info="Lingkaran = streak saat ini (hijau = menang, merah = kalah). Badge merah = streak kalah terpanjang, hijau = streak menang terpanjang.">
+    <Card
+      title="Current streak"
+      detail={
+        <Detail
+          title="Rincian streak"
+          rows={[
+            { label: "Hari — saat ini", value: now(d.cur, d.type, "day"), color: d.type === "win" ? GREEN : d.type === "loss" ? RED : undefined },
+            { label: "Hari — menang terpanjang", value: plural(d.maxWin, "day"), color: GREEN },
+            { label: "Hari — kalah terpanjang", value: plural(d.maxLoss, "day"), color: RED },
+            { label: "Trade — saat ini", value: now(t?.current ?? 0, t?.type ?? "none", "trade"), color: t?.type === "win" ? GREEN : t?.type === "loss" ? RED : undefined },
+            { label: "Trade — menang terpanjang", value: plural(t?.maxWin ?? 0, "trade"), color: GREEN },
+            { label: "Trade — kalah terpanjang", value: plural(t?.maxLoss ?? 0, "trade"), color: RED },
+          ]}
+          note="Lingkaran = streak saat ini (hijau menang, merah kalah). Badge merah = streak kalah terpanjang, hijau = streak menang terpanjang."
+          align="right"
+        />
+      }
+    >
       <div className="grid grid-cols-2 gap-3 mt-2">
         <StreakCol heading="DAYS" cur={d.cur} type={d.type} maxWin={d.maxWin} maxLoss={d.maxLoss} unit="day" />
         <StreakCol heading="TRADES" cur={t?.current ?? 0} type={t?.type ?? "none"} maxWin={t?.maxWin ?? 0} maxLoss={t?.maxLoss ?? 0} unit="trade" />
@@ -233,9 +329,9 @@ function StreakCard({ stats, calendar }: { stats: any; calendar: any[] }) {
 export function KpiRow({ stats, calendar, currency }: { stats: any; calendar: any[]; currency: string }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 stagger">
-      <WinCard stats={stats} />
+      <WinCard stats={stats} cur={currency} />
       <AvgCard stats={stats} cur={currency} />
-      <PFCard stats={stats} />
+      <PFCard stats={stats} cur={currency} />
       <StreakCard stats={stats} calendar={calendar} />
     </div>
   );
@@ -268,7 +364,8 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
   const avgWin = stats?.avgWin ?? 0;
   const avgLoss = Math.abs(stats?.avgLoss ?? 0);
   const ratio = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? SCORE_CFG.avgWinLossFull : 0;
-  const pf = Math.min(stats?.profitFactor ?? 0, 99);
+  const pfRaw = stats?.profitFactor ?? 0;
+  const pf = Math.min(pfRaw, 99);
 
   const scores = [
     clamp(((stats?.winRate ?? 0) / SCORE_CFG.winRateFull) * 100),
@@ -278,27 +375,31 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
     clamp(100 - (ddPct / SCORE_CFG.drawdownZeroAt) * 100),
     clamp((profitDayPct / SCORE_CFG.consistencyFull) * 100),
   ];
+  const raws = [
+    `${(stats?.winRate ?? 0).toFixed(1)}%`,
+    pfRaw >= 99 ? "∞" : pfRaw.toFixed(2),
+    ratio.toFixed(2),
+    recovery.toFixed(2),
+    `${ddPct.toFixed(1)}%`,
+    `${profitDayPct.toFixed(0)}% hari profit`,
+  ];
   const total = scores.reduce((s, v) => s + v, 0) / scores.length;
   const shown = useCountUp(total, 1100);
+  const tone = (s: number) => (s >= 66 ? GREEN : s >= 33 ? AMBER : RED);
 
-  const CX = 170, CY = 122, R = 80;
+  const CX = 170, CY = 112, R = 76;
   const ring = (k: number) => AXES.map((_, i) => polar(CX, CY, R * k, i).map((n) => n.toFixed(1)).join(",")).join(" ");
   const dataPts = scores.map((s, i) => polar(CX, CY, R * (s / 100), i));
   const anchors = ["middle", "start", "start", "middle", "end", "end"] as const;
 
   return (
-    <div className="rounded-2xl border bg-card p-4 card-hover flex flex-col">
-      <div className="flex items-center gap-1.5 mb-1">
+    <div className="group relative hover:z-30 rounded-2xl border bg-card p-4 card-hover flex flex-col">
+      <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold">Trade Score</p>
-        <span
-          title="Skor 0-100 dari rata-rata 6 metrik: win %, profit factor, avg win/loss, recovery factor, max drawdown (terhadap total deposit), dan konsistensi (% hari profit). Batas skala bisa diubah di SCORE_CFG."
-          className="cursor-help text-muted-foreground/60 hover:text-foreground transition-colors"
-        >
-          <Info className="w-3 h-3" />
-        </span>
+        <Info className="w-3 h-3 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
       </div>
 
-      <svg viewBox="0 0 340 250" className="w-full flex-1 min-h-[210px]">
+      <svg viewBox="0 0 340 226" className="w-full max-w-[320px] mx-auto">
         {[0.2, 0.4, 0.6, 0.8, 1].map((k) => (
           <polygon key={k} points={ring(k)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
         ))}
@@ -309,9 +410,7 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
         <g className="radar-poly" style={{ transformOrigin: `${CX}px ${CY}px` }}>
           <polygon points={dataPts.map((p) => p.map((n) => n.toFixed(1)).join(",")).join(" ")} fill="rgba(99,102,241,0.35)" stroke="#818cf8" strokeWidth={1.5} strokeLinejoin="round" />
           {dataPts.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r={3.5} fill="#1e1b4b" stroke="#a5b4fc" strokeWidth={1.5}>
-              <title>{`${AXES[i]}: ${scores[i].toFixed(0)}/100`}</title>
-            </circle>
+            <circle key={i} cx={x} cy={y} r={3.5} fill="#1e1b4b" stroke="#a5b4fc" strokeWidth={1.5} />
           ))}
         </g>
         {AXES.map((label, i) => {
@@ -325,7 +424,7 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
         })}
       </svg>
 
-      <div className="border-t mt-2 pt-3 flex items-center gap-4">
+      <div className="border-t mt-1 pt-3 flex items-center gap-4">
         <div className="shrink-0">
           <p className="text-[10px] text-muted-foreground">Your Trade Score</p>
           <p className="text-2xl font-bold tracking-tight">{stats ? shown.toFixed(2) : "—"}</p>
@@ -339,6 +438,13 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
           </div>
         </div>
       </div>
+
+      <Detail
+        title="Rincian skor"
+        rows={AXES.map((label, i) => ({ label, value: `${raws[i]} → ${scores[i].toFixed(0)}/100`, color: tone(scores[i]) }))}
+        note="Skor akhir = rata-rata 6 sumbu (masing-masing 0-100). Drawdown dihitung terhadap total deposit. Batas skala bisa diubah di SCORE_CFG."
+        align="right"
+      />
     </div>
   );
 }

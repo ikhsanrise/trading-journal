@@ -279,8 +279,8 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
-    if (data?.account?.id) fetchTransactions(data.account.id);
-  }, [data?.account?.id]);
+    if (Array.isArray(data?.transactions)) setTxList(data.transactions);
+  }, [data]);
 
   const stats = data?.stats;
   const equityCurve = data?.equityCurve ?? [];
@@ -492,10 +492,13 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <div className="h-64 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-muted-foreground">Loading...</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-32 rounded-2xl" />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-3">
+            <div className="skeleton h-[330px] rounded-2xl" />
+            <div className="skeleton h-[330px] rounded-2xl" />
           </div>
         </div>
       ) : (
@@ -522,8 +525,8 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 3: EQUITY CURVE + TRADE SCORE ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 stagger">
-            <div className="lg:col-span-2 rounded-2xl border bg-card p-4 card-hover">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-3 stagger">
+            <div className="min-w-0 rounded-2xl border bg-card p-4 card-hover">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold">Equity Curve</p>
                 <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
@@ -537,7 +540,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               {cumulativeCurve.length > 0 ? (
-                <ResponsiveContainer width="100%" height={270}>
+                <ResponsiveContainer width="100%" height={280}>
                   <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">

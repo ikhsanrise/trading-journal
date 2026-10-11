@@ -31,11 +31,17 @@ export async function GET(req: NextRequest) {
 
   if (!targetAccount) return NextResponse.json({ accounts, stats: null, equityCurve: [], bySymbol: [], bySession: [], calendar: [], recentTrades: [] });
 
-  const trades = await prisma.trade.findMany({
-    where: { accountId: targetAccount.id },
-    include: { account: true, setup: true },
-    orderBy: { entryDate: "asc" },
-  });
+  const [trades, transactions] = await Promise.all([
+    prisma.trade.findMany({
+      where: { accountId: targetAccount.id },
+      orderBy: { entryDate: "asc" },
+    }),
+    prisma.transaction.findMany({
+      where: { accountId: targetAccount.id },
+      orderBy: { date: "desc" },
+      take: 5,
+    }),
+  ]);
 
   const closedTrades = trades.filter(t => t.status === "closed" || t.status === "CLOSED");
   const allClosedTrades = closedTrades;
@@ -117,9 +123,11 @@ export async function GET(req: NextRequest) {
       profitFactor: calcProfitFactor(closedTrades),
       currentBalance: targetAccount.currentBalance,
       initialBalance: targetAccount.initialBalance,
-      avgWin, avgLoss, streak, winCount, lossCount, beCount,
+      avgWin, avgLoss, streak,
+      grossProfit: Math.round(winTrades.reduce((s, t) => s + (t.pnl ?? 0), 0) * 100) / 100,
+      grossLoss: Math.round(Math.abs(lossTrades.reduce((s, t) => s + (t.pnl ?? 0), 0)) * 100) / 100, winCount, lossCount, beCount,
     },
-    equityCurve, bySymbol, bySession, calendar, recentTrades,
+    equityCurve, bySymbol, bySession, calendar, recentTrades, transactions,
   });
   response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
   return response;

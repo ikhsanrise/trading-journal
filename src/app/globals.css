@@ -188,3 +188,41 @@ tbody > tr { animation: rowIn .35s cubic-bezier(.22,1,.36,1) backwards; }
 @media (prefers-reduced-motion: reduce) {
   .gauge-seg, .bar-grow, .ring-in, .radar-poly, .score-marker { animation: none !important; }
 }
+
+/* ── login ── */
+@keyframes loginCard { from { opacity: 0; transform: translateY(22px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes loginItem { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.login-scope input:not([type="checkbox"]):not([type="radio"]) {
+  border-radius: 14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+.login-scope input:not([type="checkbox"]):not([type="radio"]):hover { border-color: rgba(99,102,241,.45); }
+.login-scope input:not([type="checkbox"]):not([type="radio"]):focus {
+  outline: none; border-color: rgba(129,140,248,.8); box-shadow: 0 0 0 4px rgba(99,102,241,.18);
+}
+.login-scope button {
+  border-radius: 14px;
+  transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, filter .2s ease, background-color .2s ease;
+}
+.login-scope button[type="submit"]:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 24px -10px rgba(79,70,229,.75); filter: brightness(1.1); }
+.login-scope button:active:not(:disabled) { transform: scale(.98); }
+
+.login-scope > div > * { animation: loginItem .55s cubic-bezier(.22,1,.36,1) backwards; }
+.login-scope > div > *:nth-child(2) { animation-delay: .08s; }
+.login-scope > div > *:nth-child(3) { animation-delay: .16s; }
+.login-scope div[class~="border"] {
+  border-radius: 24px;
+  box-shadow: 0 24px 60px -30px rgba(0,0,0,.7);
+  animation: loginCard .6s cubic-bezier(.22,1,.36,1) .05s backwards;
+}
+.login-scope form > * { animation: loginItem .5s cubic-bezier(.22,1,.36,1) backwards; }
+.login-scope form > *:nth-child(1) { animation-delay: .18s; }
+.login-scope form > *:nth-child(2) { animation-delay: .25s; }
+.login-scope form > *:nth-child(3) { animation-delay: .32s; }
+.login-scope form > *:nth-child(4) { animation-delay: .39s; }
+.login-scope form > *:nth-child(5) { animation-delay: .46s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-scope *, .login-scope div[class~="border"] { animation: none !important; }
+}

@@ -34,7 +34,7 @@ const TOOLTIP_STYLE = {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="bg-card border rounded-xl p-3">
+    <div className="bg-card border rounded-xl p-3 card-hover">
       <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
       <p className={cn("text-base font-semibold tracking-tight truncate", color ?? "text-foreground")}>{value}</p>
       {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
@@ -134,7 +134,7 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
                 <div key={di}
                   role={entry ? "button" : undefined}
                   onClick={() => { if (entry) setSelectedDay({ date: key, entry }); }}
-                  className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between transition-all"
+                  className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between cal-cell"
                   style={c
                     ? { background: c.bg, borderColor: c.border, cursor: entry ? "pointer" : "default" }
                     : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))", cursor: entry ? "pointer" : "default" }
@@ -176,8 +176,8 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
       {/* Day popup */}
       {selectedDay && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedDay(null)}>
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm anim-fade" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl anim-pop" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground">Trading Day</p>
@@ -210,8 +210,8 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
       {/* Week popup */}
       {selectedWeek && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedWeek(null)}>
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm anim-fade" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl anim-pop" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground">{format(current, "MMMM yyyy")}</p>
@@ -500,9 +500,9 @@ export default function DashboardPage() {
       ) : (
         <>
           {/* ── ROW 1: KEY METRICS ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
             {/* Net P&L - highlighted */}
-            <div className="lg:col-span-1 rounded-2xl p-4 border relative overflow-hidden"
+            <div className="lg:col-span-1 rounded-2xl p-4 border relative overflow-hidden card-hover"
               style={{ background: stats?.netPnL >= 0 ? "linear-gradient(135deg, rgba(22,163,74,0.12), rgba(22,163,74,0.04))" : "linear-gradient(135deg, rgba(220,38,38,0.12), rgba(220,38,38,0.04))", borderColor: stats?.netPnL >= 0 ? "rgba(22,163,74,0.3)" : "rgba(220,38,38,0.3)" }}>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Net P&L</p>
               <p className={cn("text-2xl font-bold tracking-tight", stats?.netPnL >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
@@ -511,7 +511,7 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground mt-1">{stats?.closedTrades ?? 0} trades closed</p>
             </div>
 
-            <div className="rounded-2xl p-4 border bg-card">
+            <div className="rounded-2xl p-4 border bg-card card-hover">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Win Rate</p>
               <p className={cn("text-2xl font-bold", stats?.winRate >= 50 ? "text-[#4ade80]" : "text-[#f87171]")}>
                 {stats ? `${stats.winRate.toFixed(1)}%` : "—"}
@@ -519,7 +519,7 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground mt-1">of {stats?.closedTrades ?? 0} trades</p>
             </div>
 
-            <div className="rounded-2xl p-4 border bg-card">
+            <div className="rounded-2xl p-4 border bg-card card-hover">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Profit Factor</p>
               <p className={cn("text-2xl font-bold", stats?.profitFactor >= 1 ? "text-[#4ade80]" : "text-[#f87171]")}>
                 {stats ? stats.profitFactor.toFixed(2) : "—"}
@@ -527,7 +527,7 @@ export default function DashboardPage() {
               <p className="text-[10px] text-muted-foreground mt-1">gross win / loss</p>
             </div>
 
-            <div className="rounded-2xl p-4 border bg-card">
+            <div className="rounded-2xl p-4 border bg-card card-hover">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Avg R-Multiple</p>
               <p className={cn("text-2xl font-bold", (stats?.avgR ?? 0) > 0 ? "text-[#4ade80]" : "text-muted-foreground")}>
                 {stats ? formatR(stats.avgR) : "—"}
@@ -537,7 +537,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 2: SECONDARY STATS ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 stagger">
             <StatCard label="Best Day" value={bestDay ? fmtK(bestDay.pnl) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#4ade80]" : undefined} />
             <StatCard label="Worst Day" value={worstDay ? fmtK(worstDay.pnl) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#f87171]" : undefined} />
             <StatCard label="Avg Win" value={stats?.avgWin != null ? fmtK(stats.avgWin) : "—"} sub="per winning trade" color="text-[#4ade80]" />
@@ -545,9 +545,9 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 3: CHART + QUICK STATS ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 stagger">
             {/* Equity Curve - 2/3 width */}
-            <div className="lg:col-span-2 rounded-2xl border bg-card p-4">
+            <div className="lg:col-span-2 rounded-2xl border bg-card p-4 card-hover">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold">Equity Curve</p>
                 <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
@@ -575,7 +575,7 @@ export default function DashboardPage() {
                       tickFormatter={(v) => { const a = Math.abs(v); return a >= 1e9 ? `${sym}${(v/1e9).toFixed(1)}B` : a >= 1e6 ? `${sym}${(v/1e6).toFixed(1)}M` : a >= 1e3 ? `${sym}${(v/1e3).toFixed(0)}K` : `${sym}${v}`; }} />
                     <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 2" />
                     <Tooltip formatter={(v: number) => [formatCurrency(v, cur, true), "Equity"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "rgba(255,255,255,0.5)" }} itemStyle={{ color: CURVE_COLOR }} />
-                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#eqGrad)" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR, strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#eqGrad)" isAnimationActive animationDuration={1400} animationEasing="ease-out" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR, strokeWidth: 0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>}
@@ -619,9 +619,9 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 4: EARNINGS + GOAL ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger">
             {/* Earnings */}
-            <div className="rounded-2xl border bg-card p-4">
+            <div className="rounded-2xl border bg-card p-4 card-hover">
               <p className="text-xs font-semibold mb-3">Earnings</p>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -646,7 +646,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Monthly Goal */}
-            <div className="rounded-2xl border bg-card p-4">
+            <div className="rounded-2xl border bg-card p-4 card-hover">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold">Monthly Goal</p>
                 <button onClick={() => { setEditingGoal(true); setGoalInput(String(monthlyGoal || "")); }}
@@ -683,11 +683,11 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 5: CALENDAR + RECENT TRADES ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 stagger">
             <div className="lg:col-span-3">
               <CalendarHeatmap calendarData={calendar} currency={data?.account?.currency} />
             </div>
-            <div className="rounded-2xl border bg-card p-4 flex flex-col">
+            <div className="rounded-2xl border bg-card p-4 flex flex-col card-hover">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold">Recent Trades</p>
                 <Link href="/trades" className="text-[10px] text-indigo-400 hover:underline">View all →</Link>
@@ -696,7 +696,7 @@ export default function DashboardPage() {
                 {recentTrades.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-4 text-center">No trades yet</p>
                 ) : recentTrades.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div key={t.id} className="flex items-center justify-between py-2 border-b last:border-0 row-hover">
                     <div>
                       <p className="text-[11px] font-semibold">{t.symbol}</p>
                       <p className="text-[9px] text-muted-foreground">{format(new Date(t.entryDate), "dd MMM")}</p>
@@ -714,7 +714,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 6: DEPOSIT & WITHDRAW ── */}
-          <div className="rounded-2xl border bg-card p-4">
+          <div className="rounded-2xl border bg-card p-4 card-hover anim-up" style={{ animationDelay: ".3s" }}>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold">Deposit & Withdraw</p>
               <button onClick={() => setShowTxModal(true)} className="text-[10px] px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">+ Add</button>
@@ -757,8 +757,8 @@ export default function DashboardPage() {
       {/* Add Transaction Modal */}
       {showTxModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowTxModal(false)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm anim-fade" />
+          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl anim-pop" onClick={e => e.stopPropagation()}>
             <p className="text-sm font-semibold mb-4">Add Transaction</p>
             <div className="flex gap-2 mb-4">
               {(["deposit","withdraw"] as const).map(t => (

@@ -7,6 +7,7 @@ import {
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { cn, formatCurrency, formatR } from "@/lib/utils";
 import Link from "next/link";
+import { KpiRow, TradeScoreCard } from "@/components/dashboard/KpiCards";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, addMonths, subMonths,
@@ -499,69 +500,44 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* ── ROW 1: KEY METRICS ── */}
+          {/* ── ROW 1: KPI (Win %, Avg W/L, Profit Factor, Streak) ── */}
+          <KpiRow stats={stats} calendar={calendar} currency={cur} />
+
+          {/* ── ROW 2: NET P&L + DAY EXTREMES ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-            {/* Net P&L - highlighted */}
-            <div className="lg:col-span-1 rounded-2xl p-4 border relative overflow-hidden card-hover"
-              style={{ background: stats?.netPnL >= 0 ? "linear-gradient(135deg, rgba(22,163,74,0.12), rgba(22,163,74,0.04))" : "linear-gradient(135deg, rgba(220,38,38,0.12), rgba(220,38,38,0.04))", borderColor: stats?.netPnL >= 0 ? "rgba(22,163,74,0.3)" : "rgba(220,38,38,0.3)" }}>
+            <div className="rounded-2xl p-4 border relative overflow-hidden card-hover"
+              style={{
+                background: stats?.netPnL >= 0 ? "linear-gradient(135deg, rgba(22,163,74,0.14), rgba(22,163,74,0.04))" : "linear-gradient(135deg, rgba(220,38,38,0.14), rgba(220,38,38,0.04))",
+                borderColor: stats?.netPnL >= 0 ? "rgba(22,163,74,0.3)" : "rgba(220,38,38,0.3)",
+              }}>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Net P&L</p>
               <p className={cn("text-2xl font-bold tracking-tight", stats?.netPnL >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
-                {stats ? fmtK(stats.netPnL) : "—"}
+                {stats ? formatCurrency(stats.netPnL, cur) : "—"}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1">{stats?.closedTrades ?? 0} trades closed</p>
             </div>
-
-            <div className="rounded-2xl p-4 border bg-card card-hover">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Win Rate</p>
-              <p className={cn("text-2xl font-bold", stats?.winRate >= 50 ? "text-[#4ade80]" : "text-[#f87171]")}>
-                {stats ? `${stats.winRate.toFixed(1)}%` : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1">of {stats?.closedTrades ?? 0} trades</p>
-            </div>
-
-            <div className="rounded-2xl p-4 border bg-card card-hover">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Profit Factor</p>
-              <p className={cn("text-2xl font-bold", stats?.profitFactor >= 1 ? "text-[#4ade80]" : "text-[#f87171]")}>
-                {stats ? stats.profitFactor.toFixed(2) : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1">gross win / loss</p>
-            </div>
-
-            <div className="rounded-2xl p-4 border bg-card card-hover">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Avg R-Multiple</p>
-              <p className={cn("text-2xl font-bold", (stats?.avgR ?? 0) > 0 ? "text-[#4ade80]" : "text-muted-foreground")}>
-                {stats ? formatR(stats.avgR) : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1">per trade</p>
-            </div>
-          </div>
-
-          {/* ── ROW 2: SECONDARY STATS ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 stagger">
             <StatCard label="Best Day" value={bestDay ? fmtK(bestDay.pnl) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#4ade80]" : undefined} />
             <StatCard label="Worst Day" value={worstDay ? fmtK(worstDay.pnl) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#f87171]" : undefined} />
-            <StatCard label="Avg Win" value={stats?.avgWin != null ? fmtK(stats.avgWin) : "—"} sub="per winning trade" color="text-[#4ade80]" />
-            <StatCard label="Avg Loss" value={stats?.avgLoss != null ? fmtK(stats.avgLoss) : "—"} sub="per losing trade" color="text-[#f87171]" />
+            <StatCard label="Avg Hold" value={avgDuration ?? "—"} sub="per trade" />
           </div>
 
-          {/* ── ROW 3: CHART + QUICK STATS ── */}
+          {/* ── ROW 3: EQUITY CURVE + TRADE SCORE ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 stagger">
-            {/* Equity Curve - 2/3 width */}
             <div className="lg:col-span-2 rounded-2xl border bg-card p-4 card-hover">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold">Equity Curve</p>
                 <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
-                  {(["daily","weekly","monthly"] as const).map(v => (
+                  {(["daily", "weekly", "monthly"] as const).map((v) => (
                     <button key={v} onClick={() => setEquityView(v)}
                       className={cn("text-[9px] px-2 py-0.5 rounded-md font-medium transition-colors capitalize",
                         equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-                      {v.slice(0,1).toUpperCase() + v.slice(1,3)}
+                      {v.slice(0, 1).toUpperCase() + v.slice(1, 3)}
                     </button>
                   ))}
                 </div>
               </div>
               {cumulativeCurve.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={270}>
                   <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
@@ -572,7 +548,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                     <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={48} axisLine={false} tickLine={false}
-                      tickFormatter={(v) => { const a = Math.abs(v); return a >= 1e9 ? `${sym}${(v/1e9).toFixed(1)}B` : a >= 1e6 ? `${sym}${(v/1e6).toFixed(1)}M` : a >= 1e3 ? `${sym}${(v/1e3).toFixed(0)}K` : `${sym}${v}`; }} />
+                      tickFormatter={(v) => { const a = Math.abs(v); return a >= 1e9 ? `${sym}${(v / 1e9).toFixed(1)}B` : a >= 1e6 ? `${sym}${(v / 1e6).toFixed(1)}M` : a >= 1e3 ? `${sym}${(v / 1e3).toFixed(0)}K` : `${sym}${v}`; }} />
                     <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 2" />
                     <Tooltip formatter={(v: number) => [formatCurrency(v, cur, true), "Equity"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "rgba(255,255,255,0.5)" }} itemStyle={{ color: CURVE_COLOR }} />
                     <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#eqGrad)" isAnimationActive animationDuration={1400} animationEasing="ease-out" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR, strokeWidth: 0 }} />
@@ -580,46 +556,11 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               ) : <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>}
             </div>
-
-            {/* Side stats - 1/3 width */}
-            <div className="flex flex-col gap-2">
-              {/* Session breakdown */}
-              <div className="rounded-2xl border bg-card p-4 flex-1">
-                <p className="text-xs font-semibold mb-2">By Session</p>
-                <div className="space-y-2">
-                  {bySession.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
-                  {bySession.slice(0, 4).map((s: any) => (
-                    <div key={s.session} className="flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground w-16 truncate capitalize">{sessionLabel[s.session] ?? s.session}</span>
-                      <div className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-indigo-500" style={{ width: `${s.winRate}%` }} />
-                      </div>
-                      <span className="text-[10px] font-medium w-8 text-right">{s.winRate}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Streak + Duration */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-2xl border bg-card p-3">
-                  <p className="text-[10px] text-muted-foreground mb-1">Streak</p>
-                  <p className={cn("text-lg font-bold", stats?.streak?.type === "win" ? "text-[#4ade80]" : "text-[#f87171]")}>
-                    {stats?.streak ? `${stats.streak.current}${stats.streak.type === "win" ? "🔥" : "❄️"}` : "—"}
-                  </p>
-                  <p className="text-[9px] text-muted-foreground">Max W:{stats?.streak?.maxWin ?? 0} L:{stats?.streak?.maxLoss ?? 0}</p>
-                </div>
-                <div className="rounded-2xl border bg-card p-3">
-                  <p className="text-[10px] text-muted-foreground mb-1">Avg Hold</p>
-                  <p className="text-lg font-bold">{avgDuration ?? "—"}</p>
-                  <p className="text-[9px] text-muted-foreground">per trade</p>
-                </div>
-              </div>
-            </div>
+            <TradeScoreCard stats={stats} calendar={calendar} account={data?.account} />
           </div>
 
           {/* ── ROW 4: EARNINGS + GOAL ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 stagger">
             {/* Earnings */}
             <div className="rounded-2xl border bg-card p-4 card-hover">
               <p className="text-xs font-semibold mb-3">Earnings</p>
@@ -679,6 +620,22 @@ export default function DashboardPage() {
               ) : (
                 <div className="h-16 flex items-center justify-center text-xs text-muted-foreground">Set a monthly profit goal</div>
               )}
+            </div>
+          {/* By Session */}
+            <div className="rounded-2xl border bg-card p-4 card-hover">
+              <p className="text-xs font-semibold mb-3">By Session</p>
+              <div className="space-y-2.5">
+                {bySession.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
+                {bySession.slice(0, 4).map((s: any) => (
+                  <div key={s.session} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground w-16 truncate capitalize">{sessionLabel[s.session] ?? s.session}</span>
+                    <div className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-indigo-500" style={{ width: `${s.winRate}%` }} />
+                    </div>
+                    <span className="text-[10px] font-medium w-8 text-right">{s.winRate}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

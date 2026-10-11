@@ -100,6 +100,9 @@ export async function GET(req: NextRequest) {
     else break;
   }
   const streak = { current: currentStreak, type: lastOutcome ?? "none", maxWin, maxLoss };
+  const winCount = closedTrades.filter((t) => t.outcome === "win").length;
+  const lossCount = closedTrades.filter((t) => t.outcome === "loss").length;
+  const beCount = closedTrades.length - winCount - lossCount;
 
   const recentTrades = [...trades].sort((a, b) => b.entryDate.getTime() - a.entryDate.getTime()).slice(0, 5);
 
@@ -114,7 +117,7 @@ export async function GET(req: NextRequest) {
       profitFactor: calcProfitFactor(closedTrades),
       currentBalance: targetAccount.currentBalance,
       initialBalance: targetAccount.initialBalance,
-      avgWin, avgLoss, streak,
+      avgWin, avgLoss, streak, winCount, lossCount, beCount,
     },
     equityCurve, bySymbol, bySession, calendar, recentTrades,
   });

@@ -26,6 +26,13 @@ export async function GET(req: NextRequest) {
   if (direction) where.direction = direction;
   if (search) where.symbol = { contains: search.toUpperCase() };
   if (setupCategory) where.setupCategory = setupCategory;
+  const dateFrom = searchParams.get("from");
+  const dateTo = searchParams.get("to");
+  if (dateFrom || dateTo) {
+    where.entryDate = {};
+    if (dateFrom) where.entryDate.gte = new Date(dateFrom + "T00:00:00.000Z");
+    if (dateTo) where.entryDate.lte = new Date(dateTo + "T23:59:59.999Z");
+  }
 
   const [total, trades] = await Promise.all([
     prisma.trade.count({ where }),

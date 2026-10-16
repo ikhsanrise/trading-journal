@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { Building2 } from "lucide-react";
 import {
   TrendingUp, LayoutDashboard, ListOrdered, BarChart3,
-  CalendarDays, BookOpen, Settings,
+  CalendarDays, BookOpen, Settings, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/propfirm", icon: Building2, label: "Prop Firm" },
   { href: "/playbook", icon: BookOpen, label: "Playbook" },
+  { href: "/reports", icon: FileText, label: "Laporan" },
 ];
 
 export default function Sidebar() {
@@ -23,16 +24,16 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-12 flex-col items-center py-3 gap-1.5 bg-card border-r shrink-0">
-        <Link href="/dashboard" className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center mb-2 hover:bg-indigo-700 transition-colors">
-          <TrendingUp className="w-4 h-4 text-white" />
+      <aside className="hidden md:flex w-[68px] flex-col items-center py-4 gap-1.5 bg-card dark:bg-[#080d24] border-r dark:border-[#27358a]/30 shrink-0">
+        <Link href="/dashboard" className="w-9 h-9 bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] rounded-xl flex items-center justify-center mb-3 hover:brightness-110 transition">
+          <TrendingUp className="w-[18px] h-[18px] text-white" />
         </Link>
         <nav className="flex flex-col gap-1 flex-1">
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = pathname.startsWith(href);
             return (
               <Link key={href} href={href}>
-                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground", active && "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")} title={label}>
+                <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground", active && "bg-[#4f6bff]/15 text-[#3b57e8] dark:text-[#9db0ff] shadow-[inset_0_0_0_1px_rgba(79,107,255,0.4),0_0_20px_-6px_rgba(79,107,255,0.7)]")} title={label}>
                   <Icon className="w-[18px] h-[18px]" />
                 </div>
               </Link>
@@ -40,7 +41,7 @@ export default function Sidebar() {
           })}
         </nav>
         <Link href="/settings">
-          <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground", pathname.startsWith("/settings") && "bg-indigo-50 dark:bg-indigo-950 text-indigo-600")} title="Settings">
+          <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground", pathname.startsWith("/settings") && "bg-[#4f6bff]/15 text-[#3b57e8] dark:text-[#9db0ff] shadow-[inset_0_0_0_1px_rgba(79,107,255,0.4)]")} title="Settings">
             <Settings className="w-[18px] h-[18px]" />
           </div>
         </Link>

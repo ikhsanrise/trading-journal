@@ -101,6 +101,11 @@ export default function CalendarPage() {
     };
   });
   const yearPnL = yearMonthly.reduce((s, m) => s + m.pnl, 0);
+  const activeMonths = yearMonthly.filter(m => m.tradeDays > 0);
+  const bestMonth = activeMonths.length ? activeMonths.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : null;
+  const worstMonth = activeMonths.length ? activeMonths.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : null;
+  const monthMax = Math.max(1, ...yearMonthly.map(m => Math.abs(m.pnl)));
+  const fmtM = (v: number) => `${v >= 0 ? "+" : "-"}${(Math.abs(v) / 1_000_000).toFixed(1)}M`;
 
   return (
     <div className="p-4 space-y-4">
@@ -109,7 +114,7 @@ export default function CalendarPage() {
         <AccountSwitcher value={accountId} onChange={setAccountId} />
       </div>
       <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold">P&L Calendar</h1>
+        <h1 className="text-xl font-semibold tracking-tight">P&L Calendar</h1>
         <span className="text-xs text-muted-foreground">Full trading history</span>
       </div>
 
@@ -118,7 +123,7 @@ export default function CalendarPage() {
       ) : (
         <>
           {/* Monthly calendar */}
-          <div className="bg-card border rounded-xl p-4">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
             {/* Header */}
             <div className="flex flex-col gap-3 mb-4">
               {/* Nav row */}
@@ -237,12 +242,38 @@ export default function CalendarPage() {
           </div>
 
           {/* Year overview */}
-          <div className="bg-card border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold">{year} — Monthly Overview</p>
-              <p className={cn("text-xs font-semibold", yearPnL > 0 ? "text-[#16a34a]" : yearPnL < 0 ? "text-[#dc2626]" : "")}>
-                YTD: {formatCurrency(yearPnL, account?.currency)}
-              </p>
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-semibold">Profit by Month</p>
+                <div className="flex items-center gap-0.5 rounded-full border dark:border-[#27358a]/40 px-1">
+                  <button onClick={() => setCurrent(new Date(year - 1, getMonth(current), 1))} className="p-0.5 text-muted-foreground hover:text-foreground"><ChevronLeft className="w-3.5 h-3.5" /></button>
+                  <span className="text-[11px] font-mono px-1">{year}</span>
+                  <button onClick={() => setCurrent(new Date(year + 1, getMonth(current), 1))} className="p-0.5 text-muted-foreground hover:text-foreground"><ChevronRight className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-[11px]">
+                {bestMonth && <span className="text-muted-foreground">Best <b className="text-[#4ade80] font-mono">{bestMonth.name} {fmtM(bestMonth.pnl)}</b></span>}
+                {worstMonth && worstMonth.pnl < 0 && <span className="text-muted-foreground">Worst <b className="text-[#f87171] font-mono">{worstMonth.name} {fmtM(worstMonth.pnl)}</b></span>}
+                <p className={cn("font-semibold font-mono", yearPnL > 0 ? "text-[#4ade80]" : yearPnL < 0 ? "text-[#f87171]" : "")}>
+                  YTD: {formatCurrency(yearPnL, account?.currency)}
+                </p>
+              </div>
+            </div>
+            {/* Diverging bars */}
+            <div className="relative h-32 mb-3 grid grid-cols-12 gap-1.5 items-stretch">
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-border" />
+              {yearMonthly.map(m => {
+                const h = (Math.abs(m.pnl) / monthMax) * 50;
+                return (
+                  <div key={m.name} className="relative" title={`${m.name}: ${formatCurrency(m.pnl, account?.currency)}`}>
+                    {m.tradeDays > 0 && (
+                      <div className={cn("absolute inset-x-1 rounded-sm", m.pnl >= 0 ? "bottom-1/2 bg-gradient-to-t from-[#4ade80]/60 to-[#4ade80]" : "top-1/2 bg-gradient-to-b from-[#f87171]/60 to-[#f87171]")}
+                        style={{ height: `${Math.max(h, 2)}%` }} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="grid grid-cols-6 md:grid-cols-12 gap-1.5">
               {yearMonthly.map((m, i) => {
@@ -283,7 +314,7 @@ export default function CalendarPage() {
       {selectedMonth && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedMonth(null)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground">{year}</p>
@@ -318,7 +349,7 @@ export default function CalendarPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setSelectedWeek(null)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl"
+          <div className="relative rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-5 w-full max-w-sm shadow-2xl"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -364,7 +395,7 @@ export default function CalendarPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setSelectedDay(null)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl"
+          <div className="relative rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-5 w-full max-w-sm shadow-2xl"
             onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">

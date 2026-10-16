@@ -12,7 +12,7 @@ export default function Topbar({ user }: TopbarProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="h-11 bg-card border-b flex items-center justify-between px-4 shrink-0 relative z-10">
+    <header className="h-12 bg-card dark:bg-[#080d24]/80 backdrop-blur border-b dark:border-[#27358a]/30 flex items-center justify-between px-4 shrink-0 relative z-10">
       <div id="topbar-title" className="flex items-center gap-2" />
       <div className="flex items-center gap-3">
         <ThemeToggle />
@@ -21,8 +21,8 @@ export default function Topbar({ user }: TopbarProps) {
             onClick={() => setOpen(!open)}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-              <User className="w-3.5 h-3.5 text-blue-700 dark:text-blue-300" />
+            <div className="w-7 h-7 rounded-full bg-[#4f6bff]/15 ring-1 ring-[#4f6bff]/40 flex items-center justify-center">
+              <User className="w-3.5 h-3.5 text-[#3b57e8] dark:text-[#9db0ff]" />
             </div>
             <span className="text-xs">{user?.name ?? user?.email}</span>
             <ChevronDown className="w-3 h-3" />

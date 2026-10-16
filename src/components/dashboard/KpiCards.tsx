@@ -78,7 +78,7 @@ function Detail({ title, rows, note, align = "left" }: { title: string; rows: Ro
 
 function Card({ title, detail, children, className }: { title: string; detail?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("group relative hover:z-30 rounded-2xl border bg-card p-4 card-hover flex flex-col justify-between min-h-[128px]", className)}>
+    <div className={cn("group relative hover:z-30 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover flex flex-col justify-between min-h-[128px]", className)}>
       <div className="flex items-center gap-1.5">
         <p className="text-xs text-muted-foreground">{title}</p>
         <Info className="w-3 h-3 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
@@ -393,7 +393,7 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
   const anchors = ["middle", "start", "start", "middle", "end", "end"] as const;
 
   return (
-    <div className="group relative hover:z-30 rounded-2xl border bg-card p-4 card-hover flex flex-col">
+    <div className="group relative hover:z-30 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover flex flex-col">
       <div className="flex items-center gap-1.5">
         <p className="text-xs font-semibold">Trade Score</p>
         <Info className="w-3 h-3 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />

@@ -13,7 +13,7 @@ export default async function AppLayout({
   if (!session) redirect("/login");
 
   return (
-    <div className="flex h-screen bg-muted overflow-hidden">
+    <div className="flex h-screen bg-muted dark:bg-[#070b1d] overflow-hidden">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0">
         <Topbar user={session.user} />

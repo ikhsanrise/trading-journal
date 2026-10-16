@@ -9,7 +9,7 @@ const TOOLTIP_STYLE = { fontSize: 11, borderRadius: 8, backgroundColor: "hsl(var
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="bg-card border rounded-xl p-4">
+    <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
       <p className={cn("text-lg font-bold", color)}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>}
@@ -117,14 +117,14 @@ export default function PropFirmPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-indigo-500" />
-          <h1 className="text-sm font-semibold">Prop Firm Tracker</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Prop Firm Tracker</h1>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowAddFirm(true)} className="text-xs px-3 py-1.5 border rounded-lg hover:bg-muted transition-colors flex items-center gap-1">
             <Plus className="w-3 h-3" /> Add Firm
           </button>
           <button onClick={() => { setEntryForm(f => ({ ...f, propFirmId: firms[0]?.id ?? "" })); setShowAddEntry(true); }}
-            className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1">
+            className="text-xs px-3 py-1.5 bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white rounded-lg hover:brightness-110 transition-colors flex items-center gap-1">
             <Plus className="w-3 h-3" /> Add Entry
           </button>
         </div>
@@ -134,13 +134,13 @@ export default function PropFirmPage() {
       {firms.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => setSelectedFirm("all")}
-            className={cn("text-xs px-3 py-1.5 rounded-lg border transition-colors", selectedFirm === "all" ? "bg-indigo-600 text-white border-indigo-600" : "text-muted-foreground hover:bg-muted")}>
+            className={cn("text-xs px-3 py-1.5 rounded-lg border transition-colors", selectedFirm === "all" ? "bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white border-indigo-600" : "text-muted-foreground hover:bg-muted")}>
             All Firms
           </button>
           {firms.map(f => (
             <div key={f.id} className="flex items-center gap-1">
               <button onClick={() => setSelectedFirm(f.id)}
-                className={cn("text-xs px-3 py-1.5 rounded-lg border transition-colors", selectedFirm === f.id ? "bg-indigo-600 text-white border-indigo-600" : "text-muted-foreground hover:bg-muted")}>
+                className={cn("text-xs px-3 py-1.5 rounded-lg border transition-colors", selectedFirm === f.id ? "bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white border-indigo-600" : "text-muted-foreground hover:bg-muted")}>
                 {f.name}
               </button>
               <button onClick={() => deleteFirm(f.id)} className="text-muted-foreground hover:text-red-500 transition-colors">
@@ -152,11 +152,11 @@ export default function PropFirmPage() {
       )}
 
       {firms.length === 0 ? (
-        <div className="bg-card border rounded-xl p-12 text-center">
+        <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-12 text-center">
           <Building2 className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm font-medium mb-1">No prop firms yet</p>
           <p className="text-xs text-muted-foreground mb-4">Add your first prop firm to start tracking</p>
-          <button onClick={() => setShowAddFirm(true)} className="text-xs px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          <button onClick={() => setShowAddFirm(true)} className="text-xs px-4 py-2 bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white rounded-lg hover:brightness-110">
             Add Firm
           </button>
         </div>
@@ -171,7 +171,7 @@ export default function PropFirmPage() {
           </div>
 
           {/* Chart */}
-          <div className="bg-card border rounded-xl p-4">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
             <p className="text-xs font-semibold mb-3">Cumulative Expense vs Payout</p>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
@@ -200,7 +200,7 @@ export default function PropFirmPage() {
           </div>
 
           {/* Calendar */}
-          <div className="bg-card border rounded-xl p-4">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
             {/* Monthly summary */}
             {(() => {
               const monthStr = format(calMonth, "yyyy-MM");
@@ -262,7 +262,7 @@ export default function PropFirmPage() {
           </div>
 
           {/* Entry list */}
-          <div className="bg-card border rounded-xl overflow-hidden">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 overflow-hidden">
             <div className="px-4 py-3 border-b flex items-center justify-between">
               <p className="text-xs font-semibold">Transaction History</p>
               <span className="text-[10px] text-muted-foreground">{allEntries.length} entries</span>
@@ -303,7 +303,7 @@ export default function PropFirmPage() {
       {showAddFirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowAddFirm(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
             <p className="text-sm font-semibold mb-4">Add Prop Firm</p>
             <input type="text" value={newFirmName} onChange={e => setNewFirmName(e.target.value)}
               placeholder="e.g. FTMO, MyForexFunds, The5ers"
@@ -311,7 +311,7 @@ export default function PropFirmPage() {
             <div className="flex gap-2">
               <button onClick={() => setShowAddFirm(false)} className="flex-1 py-2 text-xs border rounded-xl text-muted-foreground hover:bg-muted">Cancel</button>
               <button onClick={addFirm} disabled={!newFirmName.trim() || saving}
-                className="flex-1 py-2 text-xs bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+                className="flex-1 py-2 text-xs bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white rounded-xl hover:brightness-110 disabled:opacity-50">
                 {saving ? "..." : "Add"}
               </button>
             </div>
@@ -323,7 +323,7 @@ export default function PropFirmPage() {
       {showAddEntry && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowAddEntry(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative bg-card border rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
             <p className="text-sm font-semibold mb-4">Add Entry</p>
             <div className="space-y-3">
               <div>
@@ -361,7 +361,7 @@ export default function PropFirmPage() {
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowAddEntry(false)} className="flex-1 py-2 text-xs border rounded-xl text-muted-foreground hover:bg-muted">Cancel</button>
               <button onClick={addEntry} disabled={!entryForm.propFirmId || !entryForm.amount || saving}
-                className="flex-1 py-2 text-xs bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50">
+                className="flex-1 py-2 text-xs bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white rounded-xl hover:brightness-110 disabled:opacity-50">
                 {saving ? "..." : "Add"}
               </button>
             </div>

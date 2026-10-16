@@ -83,7 +83,7 @@ function SetupFormModal({ setup, onClose, onSaved }: { setup?: any; onClose: () 
           </div>
           <div className="flex justify-between pt-2 border-t">
             <button type="button" onClick={onClose} className="text-xs px-4 py-2 rounded-lg border text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="text-xs px-5 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-60 font-medium">
+            <button type="submit" disabled={saving} className="text-xs px-5 py-2 rounded-lg bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white hover:brightness-110 transition-colors disabled:opacity-60 font-medium">
               {saving ? "Saving..." : setup ? "Save Changes" : "Create Setup"}
             </button>
           </div>
@@ -101,7 +101,7 @@ function SetupCard({ setup, onEdit, onDelete, stats }: { setup: any; onEdit: () 
   const avgR = stats?.avgR ?? null;
 
   return (
-    <div className="bg-card border rounded-xl overflow-hidden">
+    <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 overflow-hidden">
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -202,6 +202,33 @@ export default function PlaybookPage() {
 
   useEffect(() => { fetchSetups(); }, []);
 
+  // Trades without a setup (banner)
+  const [unsetCount, setUnsetCount] = useState(0);
+  useEffect(() => {
+    fetch("/api/trades?pageSize=1000")
+      .then(r => r.json())
+      .then(d => setUnsetCount((d.trades ?? []).filter((t: any) => !t.setupId).length))
+      .catch(() => {});
+  }, []);
+
+  // Discipline rules (stored per browser)
+  const DEFAULT_RULES = [
+    "Maks 3 trade per hari",
+    "Risiko maks 1% per trade",
+    "Stop trading setelah 2 loss beruntun",
+    "Wajib pasang Stop Loss sebelum entry",
+    "Tidak trading saat news high-impact",
+  ];
+  const [rules, setRules] = useState<string[]>(DEFAULT_RULES);
+  const [newRule, setNewRule] = useState("");
+  useEffect(() => {
+    try { const v = localStorage.getItem("tj-discipline-rules"); if (v) setRules(JSON.parse(v)); } catch {}
+  }, []);
+  function saveRules(next: string[]) {
+    setRules(next);
+    try { localStorage.setItem("tj-discipline-rules", JSON.stringify(next)); } catch {}
+  }
+
   async function deleteSetup(id: string) {
     if (!confirm("Delete this setup? Trades using it will not be deleted.")) return;
     await fetch(`/api/setups/${id}`, { method: "DELETE" });
@@ -216,11 +243,11 @@ export default function PlaybookPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-sm font-semibold">Playbook</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Playbook</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Manage your trading setups & strategies</p>
         </div>
         <button onClick={() => { setEditSetup(null); setShowForm(true); }}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white hover:brightness-110 transition-colors">
           <Plus className="w-3.5 h-3.5" /> New Setup
         </button>
       </div>
@@ -228,20 +255,27 @@ export default function PlaybookPage() {
       {/* Summary */}
       {setups.length > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-card border rounded-xl p-3">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
             <p className="text-[11px] text-muted-foreground mb-1">Total Setups</p>
             <p className="text-xl font-semibold">{setups.length}</p>
           </div>
-          <div className="bg-card border rounded-xl p-3">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
             <p className="text-[11px] text-muted-foreground mb-1">Total Trades</p>
             <p className="text-xl font-semibold">{totalTrades}</p>
           </div>
-          <div className="bg-card border rounded-xl p-3">
+          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
             <p className="text-[11px] text-muted-foreground mb-1">Combined P&L</p>
             <p className={cn("text-xl font-semibold", totalPnL > 0 ? "text-[#16a34a]" : totalPnL < 0 ? "text-[#dc2626]" : "")}>
               {formatCurrency(totalPnL)}
             </p>
           </div>
+        </div>
+      )}
+
+      {unsetCount > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
+          <p className="text-xs text-amber-600 dark:text-amber-300"><b>{unsetCount} trade</b> belum diberi setup. Tandai agar statistik per setup akurat.</p>
+          <a href="/trades" className="text-xs font-medium text-amber-600 dark:text-amber-300 hover:underline shrink-0">Buka Trade Log →</a>
         </div>
       )}
 
@@ -256,12 +290,12 @@ export default function PlaybookPage() {
           <p className="text-sm font-medium mb-1">No setups yet</p>
           <p className="text-xs text-muted-foreground mb-4">Create your first trading setup to track performance per strategy</p>
           <button onClick={() => setShowForm(true)}
-            className="text-xs px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+            className="text-xs px-4 py-2 rounded-lg bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white hover:brightness-110 transition-colors">
             Create First Setup
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {setups.map((setup) => (
             <SetupCard
               key={setup.id}
@@ -273,6 +307,25 @@ export default function PlaybookPage() {
           ))}
         </div>
       )}
+
+      {/* Discipline rules */}
+      <div className="mt-4 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
+        <p className="text-xs font-semibold mb-3">Discipline Rules</p>
+        <ul className="space-y-1.5 mb-3">
+          {rules.length === 0 && <li className="text-xs text-muted-foreground">Belum ada aturan. Tambahkan aturan disiplin trading kamu.</li>}
+          {rules.map((r, i) => (
+            <li key={i} className="flex items-center justify-between gap-2 text-xs">
+              <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#4f6bff]" />{r}</span>
+              <button onClick={() => saveRules(rules.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-foreground">✕</button>
+            </li>
+          ))}
+        </ul>
+        <form onSubmit={e => { e.preventDefault(); const v = newRule.trim(); if (v) { saveRules([...rules, v]); setNewRule(""); } }} className="flex gap-2">
+          <input value={newRule} onChange={e => setNewRule(e.target.value)} placeholder="mis. Maks 3 trade per hari"
+            className="flex-1 text-xs border rounded-xl px-3 py-1.5 bg-background" />
+          <button className="text-xs px-3 py-1.5 rounded-xl bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] text-white hover:brightness-110">Tambah</button>
+        </form>
+      </div>
 
       {showForm && (
         <SetupFormModal

@@ -31,7 +31,7 @@ function StatRow({ label, value, value2, color }: { label: string; value: string
 
 function PerfTable({ title, rows, keyLabel }: { title: string; rows: any[]; keyLabel: string }) {
   return (
-    <div className="bg-card border rounded-xl overflow-hidden">
+    <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 overflow-hidden">
       <div className="px-4 py-3 border-b">
         <p className="text-xs font-semibold">{title}</p>
       </div>
@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
 
   const header = (
     <div className="flex items-center gap-2 p-4 pb-0">
-      <span className="text-sm font-semibold">Analytics</span>
+      <span className="text-xl font-semibold tracking-tight">Analytics</span>
       <AccountSwitcher value={accountId} onChange={setAccountId} />
     </div>
   );
@@ -150,6 +150,15 @@ export default function AnalyticsPage() {
   for (const d of DAYS) { heatGrid[d] = {}; }
   for (const cell of heatmapData) { heatGrid[cell.day][cell.hour] = cell; }
 
+  const bestDow = byDow?.length ? byDow.reduce((a: any, b: any) => (b.netPnL > a.netPnL ? b : a)) : null;
+  const bestSession = bySession?.length ? bySession.reduce((a: any, b: any) => (b.winRate > a.winRate ? b : a)) : null;
+  const kpis = [
+    { label: "Total Trades", value: String(data.totalTrades), color: "" },
+    { label: "Max Drawdown", value: `${maxDrawdown.toFixed(2)}%`, color: "text-[#f87171]" },
+    { label: "Best Day", value: bestDow ? `${bestDow.day} · ${formatCurrency(bestDow.netPnL, "IDR")}` : "—", color: bestDow && bestDow.netPnL >= 0 ? "text-[#4ade80]" : "" },
+    { label: "Best Session", value: bestSession ? `${SESSION_LABELS[bestSession.session] ?? bestSession.session} · ${bestSession.winRate}%` : "—", color: "" },
+  ];
+
   // Hours with activity
   const activeHours = ([...new Set(heatmapData.map((d: any) => d.hour))] as number[]).sort((a, b) => a - b);
 
@@ -157,14 +166,23 @@ export default function AnalyticsPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">Analytics</span>
+          <span className="text-xl font-semibold tracking-tight">Analytics</span>
           <AccountSwitcher value={accountId} onChange={setAccountId} />
         </div>
         <span className="text-xs text-muted-foreground">{data.totalTrades} total trades</span>
       </div>
 
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {kpis.map(k => (
+          <div key={k.label} className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{k.label}</p>
+            <p className={cn("text-lg font-semibold font-mono tabular-nums mt-1 truncate", k.color)}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Drawdown chart */}
-      <div className="bg-card border rounded-xl p-4">
+      <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <TrendingDown className="w-4 h-4 text-[#dc2626]" />
@@ -199,7 +217,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Heatmap */}
-      <div className="bg-card border rounded-xl p-4">
+      <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
         <p className="text-xs font-semibold mb-3">Trade Activity Heatmap — Day × Hour (WIB)</p>
         {activeHours.length === 0 ? (
           <p className="text-xs text-muted-foreground">No data with entry times</p>
@@ -248,7 +266,7 @@ export default function AnalyticsPage() {
 
       {/* P&L by Day of Week bar chart */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-card border rounded-xl p-4">
+        <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
           <p className="text-xs font-semibold mb-3">P&L by Day of Week</p>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={byDow} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -273,7 +291,7 @@ export default function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-card border rounded-xl p-4">
+        <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
           <p className="text-xs font-semibold mb-2">Performance by Session</p>
           <div>
             {bySession.map((s: any) => (

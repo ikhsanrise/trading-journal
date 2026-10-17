@@ -635,7 +635,7 @@ export default function TradesPage() {
       )}
 
       {/* ── Tabel ── */}
-      <div className={PANEL}>
+      <div className={cn(PANEL, "hover:!shadow-none")}>
         <div className={cn("overflow-x-auto rounded-t-2xl transition-opacity duration-200", loading && loaded && "opacity-60")}>
           <table className="w-full min-w-[1080px] text-[13px]">
             <thead>

@@ -1,6 +1,6 @@
 // Shared navy theme constants (extracted from the Trade Log page).
 export const PANEL =
-  "rounded-2xl border bg-card transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-0.5 hover:border-[#5b74ff]/45 hover:shadow-[0_18px_40px_-18px_rgba(79,107,255,0.55)] dark:hover:border-[#5b74ff]/50 dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70";
+  "rounded-2xl border bg-card transition-[box-shadow,border-color] duration-300 ease-out hover:border-[#5b74ff]/45 hover:shadow-[0_18px_40px_-18px_rgba(79,107,255,0.55)] dark:hover:border-[#5b74ff]/50 dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70";
 export const BTN_PRIMARY =
   "bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] text-white shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] hover:brightness-110";
 export const PILL_ON =

@@ -23,8 +23,8 @@ export function HoverTip({
       <div
         role="tooltip"
         className={cn(
-          "pointer-events-none absolute z-50 w-max min-w-[160px] max-w-[260px] rounded-xl border border-[#7a8cff]/25 bg-[#0c1330]/95 px-3.5 py-3 text-left shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur-md",
-          "opacity-0 scale-95 transition duration-200 ease-out group-hover/tip:opacity-100 group-hover/tip:scale-100 group-focus-within/tip:opacity-100 group-focus-within/tip:scale-100",
+          "pointer-events-none absolute z-50 w-max min-w-[160px] max-w-[260px] rounded-xl border border-[#7a8cff]/25 bg-[#0c1330] px-3.5 py-3 text-left shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)]",
+          "invisible opacity-0 scale-95 transition-[opacity,transform,visibility] duration-200 ease-out group-hover/tip:visible group-hover/tip:opacity-100 group-hover/tip:scale-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 group-focus-within/tip:scale-100",
           side === "top" ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top",
           align === "center" ? "left-1/2 -translate-x-1/2" : align === "left" ? "left-0" : "right-0",
         )}

@@ -650,6 +650,105 @@ export default function AnalyticsPage() {
         <p className={cn(CAP, "mt-1")}>Aktivitas per jam, hari, kategori, dan setup</p>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-4">
+        {/* P&L by Day of Week */}
+        <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] min-w-0")}>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-1.5">
+            <div>
+              <h2 className={H2}>P&L by Day of Week</h2>
+              <div className={cn(CAP, "mt-1")}>Rekap P&L per hari dalam seminggu</div>
+            </div>
+            <div className="text-right">
+              <div className={CAP}>Total</div>
+              <b className={cn("font-mono tabular-nums text-xl tracking-[-0.02em]", pnlColor(dowTotal))}>{fullMoney(dowTotal)}</b>
+            </div>
+          </div>
+
+          {/* Diverging bars */}
+          <div className="relative h-[200px] md:h-[240px] mt-3.5 mb-1">
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-[#7a8cff]/30" />
+            <div className="absolute inset-0 flex gap-1.5 md:gap-3">
+              {dowDays.map((d: any, di: number) => {
+                const h = Math.max((Math.abs(d.netPnL) / dowMax) * 43, 1);
+                const pos = d.netPnL >= 0;
+                return (
+                  <HoverTip key={d.day} block side="top" align={di < 1 ? "left" : di >= 6 ? "right" : "center"}
+                    title={d.label} rows={[
+                      { label: "Net P&L", value: fullMoney(d.netPnL), tone: pos ? "win" : "loss" },
+                      { label: "Trade", value: String(d.totalTrades) },
+                      { label: "Win rate", value: `${Number(d.winRate).toFixed(0)}%` },
+                    ]}
+                    className="flex-1 min-w-0 h-full rounded-lg transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.07] motion-reduce:transition-none">
+                    <div className="relative w-full h-full">
+                      {d.totalTrades > 0 ? (
+                        <>
+                          <div className={cn("absolute inset-x-[14%] transition-[filter,box-shadow] duration-200 ease-out group-hover/tip:brightness-125 group-hover/tip:shadow-[0_0_16px_rgba(79,107,255,0.5)] motion-reduce:transition-none", pos ? "bottom-1/2 rounded-t-lg rounded-b-[3px] bg-gradient-to-b from-[#4ade80] to-[#16a34a]" : "top-1/2 rounded-b-lg rounded-t-[3px] bg-gradient-to-b from-[#f87171] to-[#b91c1c]")}
+                            style={{ height: `${h}%` }} />
+                          <span className={cn("absolute -inset-x-2 text-center text-[9px] md:text-[11px] font-bold font-mono whitespace-nowrap", pos ? "text-emerald-600 dark:text-[#4ade80]" : "text-red-600 dark:text-[#f87171]")}
+                            style={pos ? { bottom: `calc(50% + ${h}% + 4px)` } : { top: `calc(50% + ${h}% + 4px)` }}>
+                            {fmtMoney(d.netPnL, currency, true)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="absolute top-[calc(50%-8px)] inset-x-0 text-center text-xs text-muted-foreground opacity-50">—</span>
+                      )}
+                    </div>
+                  </HoverTip>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex gap-1.5 md:gap-3 text-[10px] md:text-xs text-muted-foreground dark:text-[#8a94c4] font-semibold mt-1">
+            {dowDays.map((d: any) => <span key={d.day} className="flex-1 text-center">{d.label}</span>)}
+          </div>
+
+          {/* Day tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-[22px] pt-5 border-t dark:border-[#7a8cff]/10">
+            {dowDays.map((d: any, i: number) => {
+              const has = d.totalTrades > 0;
+              const pos = d.netPnL >= 0;
+              return (
+                <HoverTip key={d.day} block className="min-w-0" side="top" align={i % 4 === 0 ? "left" : i % 4 === 3 ? "right" : "center"}
+                  title={d.label} rows={[{ label: "Trade", value: String(d.totalTrades) }, { label: "Win rate", value: `${Number(d.winRate).toFixed(0)}%` }]}>
+                  <div className={cn("h-full rounded-[13px] border px-3.5 py-3 flex flex-col gap-1.5 min-w-0 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[#7a8cff]/50 hover:shadow-[0_10px_24px_-12px_rgba(79,107,255,0.55)] motion-reduce:transform-none motion-reduce:transition-none",
+                    !has ? "border-dashed dark:border-[#7a8cff]/15" : pos ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30")}>
+                    <span className={cn("text-xs font-bold", has ? "text-foreground dark:text-[#dfe4ff]" : "text-muted-foreground dark:text-[#7d88bd]")}>{d.label}</span>
+                    {has ? (
+                      <b className={cn("text-[13px] font-mono tabular-nums tracking-[-0.03em] truncate", pos ? "text-[#4ade80]" : "text-[#f87171]")}>{fullMoney(d.netPnL)}</b>
+                    ) : (
+                      <span className={cn(CAP, "opacity-60")}>Tanpa trade</span>
+                    )}
+                  </div>
+                </HoverTip>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-[18px] text-[12.5px]">
+            {dowBest && <span className={CAP}>Hari terbaik <b className="ml-1.5 text-[#4ade80]">{dowBest.label} · {fullMoney(dowBest.netPnL)}</b></span>}
+            {dowWorst && dowWorst.netPnL < 0 && <span className={CAP}>Hari terburuk <b className="ml-1.5 text-[#f87171]">{dowWorst.label} · {fullMoney(dowWorst.netPnL)}</b></span>}
+            <span className={CAP}>Hari profit <b className="ml-1.5 text-foreground dark:text-[#dfe4ff]">{dowActive.filter((d: any) => d.netPnL > 0).length} dari {dowActive.length}</b></span>
+          </div>
+        </div>
+
+        {/* Session list */}
+        <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] min-w-0")}>
+          <h2 className={H2}>Net P&L by Session</h2>
+          <p className={cn(CAP, "mt-1 mb-2")}>Net P&L and win rate per trading session</p>
+          <div>
+            {bySession.map((s: any) => (
+              <StatRow
+                key={s.session}
+                label={SESSION_LABELS[s.session] ?? s.session}
+                value={fullMoney(s.netPnL)}
+                value2={`${s.totalTrades} trades · ${s.winRate.toFixed(0)}% win rate`}
+                color={pnlColor(s.netPnL)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Heatmap */}
       <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6")}>
         <div className="min-w-0">
@@ -758,105 +857,6 @@ export default function AnalyticsPage() {
             )}
           </div>
         </aside>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-4">
-        {/* P&L by Day of Week */}
-        <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] min-w-0")}>
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-1.5">
-            <div>
-              <h2 className={H2}>P&L by Day of Week</h2>
-              <div className={cn(CAP, "mt-1")}>Rekap P&L per hari dalam seminggu</div>
-            </div>
-            <div className="text-right">
-              <div className={CAP}>Total</div>
-              <b className={cn("font-mono tabular-nums text-xl tracking-[-0.02em]", pnlColor(dowTotal))}>{fullMoney(dowTotal)}</b>
-            </div>
-          </div>
-
-          {/* Diverging bars */}
-          <div className="relative h-[200px] md:h-[240px] mt-3.5 mb-1">
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-[#7a8cff]/30" />
-            <div className="absolute inset-0 flex gap-1.5 md:gap-3">
-              {dowDays.map((d: any, di: number) => {
-                const h = Math.max((Math.abs(d.netPnL) / dowMax) * 43, 1);
-                const pos = d.netPnL >= 0;
-                return (
-                  <HoverTip key={d.day} block side="top" align={di < 1 ? "left" : di >= 6 ? "right" : "center"}
-                    title={d.label} rows={[
-                      { label: "Net P&L", value: fullMoney(d.netPnL), tone: pos ? "win" : "loss" },
-                      { label: "Trade", value: String(d.totalTrades) },
-                      { label: "Win rate", value: `${Number(d.winRate).toFixed(0)}%` },
-                    ]}
-                    className="flex-1 min-w-0 h-full rounded-lg transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.07] motion-reduce:transition-none">
-                    <div className="relative w-full h-full">
-                      {d.totalTrades > 0 ? (
-                        <>
-                          <div className={cn("absolute inset-x-[14%] transition-[filter,box-shadow] duration-200 ease-out group-hover/tip:brightness-125 group-hover/tip:shadow-[0_0_16px_rgba(79,107,255,0.5)] motion-reduce:transition-none", pos ? "bottom-1/2 rounded-t-lg rounded-b-[3px] bg-gradient-to-b from-[#4ade80] to-[#16a34a]" : "top-1/2 rounded-b-lg rounded-t-[3px] bg-gradient-to-b from-[#f87171] to-[#b91c1c]")}
-                            style={{ height: `${h}%` }} />
-                          <span className={cn("absolute -inset-x-2 text-center text-[9px] md:text-[11px] font-bold font-mono whitespace-nowrap", pos ? "text-emerald-600 dark:text-[#4ade80]" : "text-red-600 dark:text-[#f87171]")}
-                            style={pos ? { bottom: `calc(50% + ${h}% + 4px)` } : { top: `calc(50% + ${h}% + 4px)` }}>
-                            {fmtMoney(d.netPnL, currency, true)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="absolute top-[calc(50%-8px)] inset-x-0 text-center text-xs text-muted-foreground opacity-50">—</span>
-                      )}
-                    </div>
-                  </HoverTip>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex gap-1.5 md:gap-3 text-[10px] md:text-xs text-muted-foreground dark:text-[#8a94c4] font-semibold mt-1">
-            {dowDays.map((d: any) => <span key={d.day} className="flex-1 text-center">{d.label}</span>)}
-          </div>
-
-          {/* Day tiles */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-[22px] pt-5 border-t dark:border-[#7a8cff]/10">
-            {dowDays.map((d: any, i: number) => {
-              const has = d.totalTrades > 0;
-              const pos = d.netPnL >= 0;
-              return (
-                <HoverTip key={d.day} block className="min-w-0" side="top" align={i % 4 === 0 ? "left" : i % 4 === 3 ? "right" : "center"}
-                  title={d.label} rows={[{ label: "Trade", value: String(d.totalTrades) }, { label: "Win rate", value: `${Number(d.winRate).toFixed(0)}%` }]}>
-                  <div className={cn("h-full rounded-[13px] border px-3.5 py-3 flex flex-col gap-1.5 min-w-0 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[#7a8cff]/50 hover:shadow-[0_10px_24px_-12px_rgba(79,107,255,0.55)] motion-reduce:transform-none motion-reduce:transition-none",
-                    !has ? "border-dashed dark:border-[#7a8cff]/15" : pos ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30")}>
-                    <span className={cn("text-xs font-bold", has ? "text-foreground dark:text-[#dfe4ff]" : "text-muted-foreground dark:text-[#7d88bd]")}>{d.label}</span>
-                    {has ? (
-                      <b className={cn("text-[13px] font-mono tabular-nums tracking-[-0.03em] truncate", pos ? "text-[#4ade80]" : "text-[#f87171]")}>{fullMoney(d.netPnL)}</b>
-                    ) : (
-                      <span className={cn(CAP, "opacity-60")}>Tanpa trade</span>
-                    )}
-                  </div>
-                </HoverTip>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-[18px] text-[12.5px]">
-            {dowBest && <span className={CAP}>Hari terbaik <b className="ml-1.5 text-[#4ade80]">{dowBest.label} · {fullMoney(dowBest.netPnL)}</b></span>}
-            {dowWorst && dowWorst.netPnL < 0 && <span className={CAP}>Hari terburuk <b className="ml-1.5 text-[#f87171]">{dowWorst.label} · {fullMoney(dowWorst.netPnL)}</b></span>}
-            <span className={CAP}>Hari profit <b className="ml-1.5 text-foreground dark:text-[#dfe4ff]">{dowActive.filter((d: any) => d.netPnL > 0).length} dari {dowActive.length}</b></span>
-          </div>
-        </div>
-
-        {/* Session list */}
-        <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] min-w-0")}>
-          <h2 className={H2}>Net P&L by Session</h2>
-          <p className={cn(CAP, "mt-1 mb-2")}>Net P&L and win rate per trading session</p>
-          <div>
-            {bySession.map((s: any) => (
-              <StatRow
-                key={s.session}
-                label={SESSION_LABELS[s.session] ?? s.session}
-                value={fullMoney(s.netPnL)}
-                value2={`${s.totalTrades} trades · ${s.winRate.toFixed(0)}% win rate`}
-                color={pnlColor(s.netPnL)}
-              />
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Setup category table */}

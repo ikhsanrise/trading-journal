@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { cn, formatCurrency, formatR } from "@/lib/utils";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
+import { HoverTip, type TipRow } from "@/components/ui/HoverTip";
 import { PANEL, PAGE, H1, SUB, H2, CAP, CHIP, CHIP_B, CHIP_G, CHIP_R, TABS, TAB, TAB_ON, BTN, BTN_PRIMARY, pnlColor } from "@/lib/theme";
 
 const TICK = { fontSize: 11, fill: "hsl(var(--muted-foreground))" };
@@ -65,7 +66,17 @@ const RANGES: { key: string; label: string; days: number | null }[] = [
   { key: "1T", label: "1T", days: 365 },
   { key: "all", label: "Semua", days: null },
 ];
-const TIP_STYLE = { fontSize: 12, borderRadius: 8, backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" };
+const TIP_STYLE = {
+  fontSize: 12, borderRadius: 12, padding: "10px 14px", backgroundColor: "rgba(12,19,48,0.96)",
+  border: "1px solid rgba(122,140,255,0.25)", color: "#e8ecff", boxShadow: "0 18px 40px -12px rgba(0,0,0,0.7)",
+};
+const TIP_LABEL = { color: "#8a94c4", fontWeight: 600, marginBottom: 4 };
+const TIP_ITEM = { color: "#e8ecff", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontVariantNumeric: "tabular-nums" as const };
+const CURSOR_LINE = { stroke: "rgba(122,140,255,0.35)", strokeDasharray: "3 3" };
+const CURSOR_BAR = { fill: "rgba(122,140,255,0.08)" };
+const BAR_HOVER =
+  "[&_.recharts-bar-rectangle]:[transition:filter_.2s_ease-out] [&_.recharts-bar-rectangle:hover]:[filter:brightness(1.25)_drop-shadow(0_0_6px_rgba(79,107,255,0.55))] motion-reduce:[&_.recharts-bar-rectangle]:[transition:none]";
+const tn = (v: number | null | undefined): TipRow["tone"] => (v == null || v === 0 ? "muted" : v > 0 ? "win" : "loss");
 
 function Icon({ children }: { children: React.ReactNode }) {
   return (
@@ -77,8 +88,8 @@ function Icon({ children }: { children: React.ReactNode }) {
 
 function InsightCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className={cn(PANEL, "p-5 flex gap-3.5 min-w-0")}>
-      <div className="h-9 w-9 shrink-0 rounded-[10px] grid place-items-center border border-[#7a8cff]/30 bg-[#4f6bff]/15 text-[#4f6bff] dark:text-[#9db0ff]">{icon}</div>
+    <div className={cn(PANEL, "group p-5 flex gap-3.5 min-w-0")}>
+      <div className="h-9 w-9 shrink-0 rounded-[10px] grid place-items-center border border-[#7a8cff]/30 bg-[#4f6bff]/15 text-[#4f6bff] dark:text-[#9db0ff] transition-[transform,box-shadow,border-color] duration-300 ease-out group-hover:scale-[1.03] group-hover:border-[#7a8cff]/60 group-hover:shadow-[0_0_18px_rgba(79,107,255,0.5)] motion-reduce:transform-none motion-reduce:transition-none">{icon}</div>
       <div className="min-w-0">
         <h3 className="text-[14px] font-bold tracking-[-0.01em]">{title}</h3>
         <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground dark:text-[#8a94c4]">{text}</p>
@@ -89,7 +100,7 @@ function InsightCard({ icon, title, text }: { icon: React.ReactNode; title: stri
 
 function StatRow({ label, value, value2, color }: { label: string; value: string; value2?: string; color?: string }) {
   return (
-    <div className="flex items-center justify-between py-[11px] border-b last:border-0 dark:border-[#7a8cff]/10 gap-3">
+    <div className="flex items-center justify-between py-[11px] border-b last:border-0 dark:border-[#7a8cff]/10 gap-3 rounded-md transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.07] motion-reduce:transition-none">
       <div className="min-w-0">
         <div className="text-[13px] font-semibold">{label}</div>
         {value2 && <div className={cn(CAP, "mt-0.5")}>{value2}</div>}
@@ -120,8 +131,8 @@ function PerfTable({ title, rows, keyLabel, currency }: { title: string; rows: a
             {rows.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">No data</td></tr>
             ) : rows.map((row, i) => (
-              <tr key={i} className="border-b last:border-0 dark:border-[#7a8cff]/10 hover:bg-muted/30 dark:hover:bg-[#4f6bff]/[0.06]">
-                <td className="px-5 md:px-6 py-3.5 font-semibold">{row.name ?? row.category ?? row.session ?? row.day}</td>
+              <tr key={i} className="group border-b last:border-0 dark:border-[#7a8cff]/10 transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.08] motion-reduce:transition-none">
+                <td className="px-5 md:px-6 py-3.5 font-semibold transition-shadow duration-200 ease-out group-hover:shadow-[inset_3px_0_0_0_#4f6bff] motion-reduce:transition-none">{row.name ?? row.category ?? row.session ?? row.day}</td>
                 <td className="px-3 py-3.5 text-right font-mono tabular-nums text-muted-foreground">{row.totalTrades}</td>
                 <td className="px-3 py-3.5 text-right font-mono tabular-nums">
                   <span className={cn("font-semibold", row.winRate >= 50 ? "text-emerald-600 dark:text-[#4ade80]" : "text-red-600 dark:text-[#f87171]")}>
@@ -147,23 +158,39 @@ function PerfTable({ title, rows, keyLabel, currency }: { title: string; rows: a
   );
 }
 
-function HeatmapCell({ pnl, trades, winRate, currency }: { pnl: number; trades: number; winRate: number; currency: string }) {
+function HeatmapCell({ pnl, trades, winRate, currency, day, hour, side, align }: {
+  pnl: number; trades: number; winRate: number; currency: string; day: string; hour: number;
+  side: "top" | "bottom"; align: "center" | "left" | "right";
+}) {
   const intensity = Math.min(1, Math.abs(pnl) / 500);
   const bg = pnl > 0
     ? `rgba(22,163,74,${0.15 + intensity * 0.7})`
     : pnl < 0
     ? `rgba(220,38,38,${0.15 + intensity * 0.7})`
     : "transparent";
-  return (
+  const cell = (
     <div
-      className="rounded flex flex-col items-center justify-center h-12 cursor-default border border-transparent hover:border-indigo-400 transition-colors"
+      className={cn(
+        "rounded flex flex-col items-center justify-center h-12 cursor-default border border-transparent transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:transform-none motion-reduce:transition-none",
+        trades > 0 ? "hover:scale-[1.03] hover:border-[#9db0ff]/70 hover:shadow-[0_0_14px_rgba(79,107,255,0.5)]" : "hover:border-indigo-400/50",
+      )}
       style={{ background: bg }}
-      title={`${trades} trades · ${winRate}% WR · ${formatCurrency(pnl, currency)}`}
     >
       {trades > 0 && <span className="text-xs font-bold" style={{ color: intensity > 0.4 ? "#ffffff" : pnl > 0 ? "#15803d" : pnl < 0 ? "#b91c1c" : "hsl(var(--muted-foreground))" }}>
         {trades}
       </span>}
     </div>
+  );
+  if (trades <= 0) return cell;
+  return (
+    <HoverTip block side={side} align={align} title={`${day} · ${String(hour).padStart(2, "0")}:00`}
+      rows={[
+        { label: "Trades", value: String(trades) },
+        { label: "Win rate", value: `${Math.round(winRate)}%`, tone: winRate >= 50 ? "win" : "loss" },
+        { label: "P&L", value: formatCurrency(pnl, currency), tone: tn(pnl) },
+      ]}>
+      {cell}
+    </HoverTip>
   );
 }
 
@@ -261,13 +288,60 @@ export default function AnalyticsPage() {
     });
   const sessName = (k: string) => SESSION_LABELS[k] ?? k;
 
-  const kpis = [
-    { label: "Expectancy", value: money(sm.expectancy ?? 0), sub: "per trade", color: pnlColor(sm.expectancy ?? 0) },
-    { label: "Rata-rata Win", value: money(sm.avgWin ?? 0), sub: `${sm.winCount ?? 0} trade`, color: WIN_TXT },
-    { label: "Rata-rata Loss", value: money(sm.avgLoss ?? 0), sub: `${sm.lossCount ?? 0} trade`, color: LOSS_TXT },
-    { label: "Payoff Ratio", value: (sm.payoffRatio ?? 0).toFixed(2), sub: "win ÷ loss", color: "" },
-    { label: "Hari Terbaik", value: sm.bestDay ? money(sm.bestDay.pnl, true) : "—", sub: fmtDayLabel(sm.bestDay?.date), color: sm.bestDay ? pnlColor(sm.bestDay.pnl) : "" },
-    { label: "Hari Terburuk", value: sm.worstDay ? money(sm.worstDay.pnl, true) : "—", sub: fmtDayLabel(sm.worstDay?.date), color: sm.worstDay ? pnlColor(sm.worstDay.pnl) : "" },
+  const decidedN = (sm.winCount ?? 0) + (sm.lossCount ?? 0);
+  const kpis: { label: string; value: string; sub: string; color: string; title: string; rows: TipRow[]; note: string }[] = [
+    {
+      label: "Expectancy", value: money(sm.expectancy ?? 0), sub: "per trade", color: pnlColor(sm.expectancy ?? 0),
+      title: "Expectancy", note: "(Win% × Rata-rata win) − (Loss% × Rata-rata loss). Rata-rata hasil bersih setiap trade.",
+      rows: [
+        { label: "Win / Loss", value: `${sm.winCount ?? 0} / ${sm.lossCount ?? 0}` },
+        { label: "Rata-rata win", value: fullMoney(sm.avgWin ?? 0), tone: "win" },
+        { label: "Rata-rata loss", value: fullMoney(sm.avgLoss ?? 0), tone: "loss" },
+        { label: "Expectancy", value: fullMoney(sm.expectancy ?? 0), tone: tn(sm.expectancy ?? 0) },
+      ],
+    },
+    {
+      label: "Rata-rata Win", value: money(sm.avgWin ?? 0), sub: `${sm.winCount ?? 0} trade`, color: WIN_TXT,
+      title: "Rata-rata Win", note: "Total profit dari trade menang ÷ jumlah trade menang.",
+      rows: [
+        { label: "Trade menang", value: String(sm.winCount ?? 0), tone: "win" },
+        { label: "Rata-rata", value: fullMoney(sm.avgWin ?? 0), tone: "win" },
+        { label: "Total profit", value: fullMoney((sm.avgWin ?? 0) * (sm.winCount ?? 0)), tone: "win" },
+      ],
+    },
+    {
+      label: "Rata-rata Loss", value: money(sm.avgLoss ?? 0), sub: `${sm.lossCount ?? 0} trade`, color: LOSS_TXT,
+      title: "Rata-rata Loss", note: "Total kerugian dari trade kalah ÷ jumlah trade kalah.",
+      rows: [
+        { label: "Trade kalah", value: String(sm.lossCount ?? 0), tone: "loss" },
+        { label: "Rata-rata", value: fullMoney(sm.avgLoss ?? 0), tone: "loss" },
+        { label: "Total loss", value: fullMoney((sm.avgLoss ?? 0) * (sm.lossCount ?? 0)), tone: "loss" },
+      ],
+    },
+    {
+      label: "Payoff Ratio", value: (sm.payoffRatio ?? 0).toFixed(2), sub: "win ÷ loss", color: "",
+      title: "Payoff Ratio", note: "Rata-rata win ÷ |rata-rata loss|. Di atas 1.0 berarti win rata-rata lebih besar dari loss rata-rata.",
+      rows: [
+        { label: "Rata-rata win", value: fullMoney(sm.avgWin ?? 0), tone: "win" },
+        { label: "Rata-rata loss", value: fullMoney(sm.avgLoss ?? 0), tone: "loss" },
+        { label: "Payoff", value: (sm.payoffRatio ?? 0).toFixed(2) },
+        { label: "Trade selesai", value: String(decidedN), tone: "muted" },
+      ],
+    },
+    {
+      label: "Hari Terbaik", value: sm.bestDay ? money(sm.bestDay.pnl, true) : "—", sub: fmtDayLabel(sm.bestDay?.date), color: sm.bestDay ? pnlColor(sm.bestDay.pnl) : "",
+      title: "Hari Terbaik", note: "Hari dengan total P&L harian tertinggi.",
+      rows: sm.bestDay
+        ? [{ label: "Tanggal", value: fmtDayLabel(sm.bestDay.date) }, { label: "P&L", value: fullMoney(sm.bestDay.pnl), tone: tn(sm.bestDay.pnl) }]
+        : [{ label: "Data", value: "Belum ada", tone: "muted" }],
+    },
+    {
+      label: "Hari Terburuk", value: sm.worstDay ? money(sm.worstDay.pnl, true) : "—", sub: fmtDayLabel(sm.worstDay?.date), color: sm.worstDay ? pnlColor(sm.worstDay.pnl) : "",
+      title: "Hari Terburuk", note: "Hari dengan total P&L harian terendah.",
+      rows: sm.worstDay
+        ? [{ label: "Tanggal", value: fmtDayLabel(sm.worstDay.date) }, { label: "P&L", value: fullMoney(sm.worstDay.pnl), tone: tn(sm.worstDay.pnl) }]
+        : [{ label: "Data", value: "Belum ada", tone: "muted" }],
+    },
   ];
 
   // Insights
@@ -318,6 +392,7 @@ export default function AnalyticsPage() {
   const longPct = total ? (ls.long.trades / total) * 100 : 50;
   const axisW = 64;
   const distMax = Math.max(1, ...dist.map((d) => d.count));
+  const distTotal = dist.reduce((a, d) => a + d.count, 0);
   let ni = -1, pi = -1;
 
   return (
@@ -337,12 +412,14 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
-        {kpis.map(k => (
-          <div key={k.label} className={cn(PANEL, "p-4 md:px-[18px] md:py-4 min-w-0")}>
+        {kpis.map((k, ki) => (
+          <HoverTip key={k.label} block side="bottom" align={ki % 2 === 0 ? "left" : "right"} className="min-w-0 h-full" title={k.title} rows={k.rows} note={k.note}>
+          <div className={cn(PANEL, "h-full p-4 md:px-[18px] md:py-4 min-w-0")}>
             <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">{k.label}</p>
             <p className={cn("mt-2 truncate font-mono text-[22px] md:text-[26px] font-extrabold tracking-[-0.025em] tabular-nums leading-[1.05]", k.color)}>{k.value}</p>
             <p className={cn(CAP, "mt-1.5 truncate")}>{k.sub || "\u00A0"}</p>
           </div>
+          </HoverTip>
         ))}
       </div>
 
@@ -396,7 +473,9 @@ export default function AnalyticsPage() {
                   formatter={(v: number) => [fullMoney(v), "Ekuitas"]}
                   labelFormatter={(_, p: any) => (p?.[0]?.payload?.date ? fmtDayLabel(p[0].payload.date) : "")}
                   contentStyle={TIP_STYLE}
-                  labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                  labelStyle={TIP_LABEL}
+                  itemStyle={TIP_ITEM}
+                  cursor={CURSOR_LINE}
                 />
                 <Area type="monotone" dataKey="balance" stroke="url(#eqLine)" strokeWidth={2.4} fill="url(#eqGrad)"
                   dot={(p: any) => last && p.index === series.length - 1 && p.cx != null ? (
@@ -425,7 +504,9 @@ export default function AnalyticsPage() {
                   formatter={(v: number) => [fullMoney(v), "Drawdown"]}
                   labelFormatter={(_, p: any) => (p?.[0]?.payload?.date ? fmtDayLabel(p[0].payload.date) : "")}
                   contentStyle={TIP_STYLE}
-                  labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                  labelStyle={TIP_LABEL}
+                  itemStyle={TIP_ITEM}
+                  cursor={CURSOR_LINE}
                 />
                 <Area type="monotone" dataKey="drawdownAmt" stroke="#f87171" strokeWidth={2} fill="url(#ddGrad)" dot={false} />
               </AreaChart>
@@ -442,13 +523,20 @@ export default function AnalyticsPage() {
           <div className="flex flex-col gap-3.5">
             {sessions.length === 0 && <p className="text-[13px] text-muted-foreground">Belum ada data sesi</p>}
             {sessions.map((x) => (
-              <div key={x.session} className="grid grid-cols-[72px_1fr_40px] items-center gap-3 text-[13px]">
-                <span className="font-semibold truncate">{sessName(x.session)}</span>
-                <div className="h-2 rounded-full bg-secondary dark:bg-white/[0.07] overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#4f6bff] to-[#9db0ff]" style={{ width: `${Math.min(100, Math.max(2, x.winRate))}%` }} />
+              <HoverTip key={x.session} block align="left" title={`Sesi ${sessName(x.session)}`}
+                rows={[
+                  { label: "Trades", value: String(x.totalTrades ?? 0) },
+                  { label: "Win rate", value: `${(x.winRate ?? 0).toFixed(1)}%`, tone: (x.winRate ?? 0) >= 50 ? "win" : "loss" },
+                  { label: "Net P&L", value: fullMoney(x.netPnL ?? 0), tone: tn(x.netPnL ?? 0) },
+                ]}>
+                <div className="grid grid-cols-[72px_1fr_40px] items-center gap-3 text-[13px]">
+                  <span className="font-semibold truncate transition-colors duration-200 group-hover/tip:text-[#9db0ff]">{sessName(x.session)}</span>
+                  <div className="h-2 rounded-full bg-secondary dark:bg-white/[0.07] overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-[#4f6bff] to-[#9db0ff] transition-[filter,box-shadow] duration-200 ease-out group-hover/tip:brightness-125 group-hover/tip:shadow-[0_0_10px_rgba(79,107,255,0.55)] motion-reduce:transition-none" style={{ width: `${Math.min(100, Math.max(2, x.winRate))}%` }} />
+                  </div>
+                  <span className="text-right font-mono font-bold tabular-nums">{Math.round(x.winRate)}%</span>
                 </div>
-                <span className="text-right font-mono font-bold tabular-nums">{Math.round(x.winRate)}%</span>
-              </div>
+              </HoverTip>
             ))}
           </div>
         </div>
@@ -462,11 +550,19 @@ export default function AnalyticsPage() {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {([["Long", ls.long, CHIP_G], ["Short", ls.short, CHIP_R]] as [string, any, string][]).map(([name, st, chip]) => (
-              <div key={name} className="rounded-xl border p-3.5 min-w-0 dark:border-[#7a8cff]/20 dark:bg-white/[0.03]">
+              <HoverTip key={name} block className="min-w-0 h-full" side="top" align={name === "Long" ? "left" : "right"} title={`${name} positions`}
+                rows={[
+                  { label: "Trades", value: String(st.trades) },
+                  { label: "Win rate", value: `${st.winRate.toFixed(1)}%`, tone: st.winRate >= 50 ? "win" : "loss" },
+                  { label: "P&L", value: fullMoney(st.pnl), tone: tn(st.pnl) },
+                  { label: "Share", value: `${(total ? (st.trades / total) * 100 : 0).toFixed(1)}%` },
+                ]}>
+              <div className="h-full rounded-xl border p-3.5 min-w-0 dark:border-[#7a8cff]/20 dark:bg-white/[0.03] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[#5b74ff]/50 hover:shadow-[0_10px_24px_-12px_rgba(79,107,255,0.5)] motion-reduce:transform-none motion-reduce:transition-none">
                 <span className={cn(CHIP, chip, "!min-w-0 !h-5 !px-2 !text-[10.5px]")}>{name}</span>
                 <p className={cn("mt-3 truncate font-mono text-[18px] md:text-[20px] font-extrabold tracking-[-0.02em] tabular-nums", pnlColor(st.pnl))}>{money(st.pnl, true)}</p>
                 <p className={cn(CAP, "mt-1.5")}>{st.trades} trade · Win rate {st.winRate.toFixed(1)}%</p>
               </div>
+              </HoverTip>
             ))}
           </div>
         </div>
@@ -474,17 +570,18 @@ export default function AnalyticsPage() {
         <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] min-w-0")}>
           <h2 className={H2}>Distribusi P&amp;L</h2>
           <p className={cn(CAP, "mt-1 mb-2")}>Jumlah trade per rentang hasil</p>
+          <div className={BAR_HOVER}>
           <ResponsiveContainer width="100%" height={190}>
             <BarChart data={dist} margin={{ top: 8, right: 0, left: 0, bottom: 0 }} barCategoryGap="12%">
               <XAxis dataKey="label" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} interval={0} height={30}
                 tickFormatter={(v: string) => v.replace("...", "…")} />
               <YAxis hide domain={[0, distMax]} />
               <Tooltip
-                formatter={(v: number) => [`${v} trade`, "Jumlah"]}
+                formatter={(v: number) => [`${v} trade · ${distTotal ? ((v / distTotal) * 100).toFixed(1) : "0.0"}%`, "Jumlah"]}
                 contentStyle={TIP_STYLE}
-                labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
-                itemStyle={{ color: "hsl(var(--foreground))" }}
-                cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                labelStyle={TIP_LABEL}
+                itemStyle={TIP_ITEM}
+                cursor={CURSOR_BAR}
               />
               <Bar dataKey="count" radius={[5, 5, 0, 0]}>
                 {dist.map((d, i) => {
@@ -494,6 +591,7 @@ export default function AnalyticsPage() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
@@ -540,6 +638,10 @@ export default function AnalyticsPage() {
                     return (
                       <div key={h} className="w-12 shrink-0">
                         <HeatmapCell
+                          day={day}
+                          hour={h}
+                          side={DAYS.indexOf(day) < 3 ? "bottom" : "top"}
+                          align={activeHours.indexOf(h) < 2 ? "left" : activeHours.indexOf(h) >= activeHours.length - 2 ? "right" : "center"}
                           pnl={cell?.pnl ?? 0}
                           trades={cell?.trades ?? 0}
                           winRate={cell?.winRate ?? 0}
@@ -570,6 +672,7 @@ export default function AnalyticsPage() {
         <div className={cn(PANEL, "p-5 md:px-6 md:py-[22px] min-w-0")}>
           <h2 className={H2}>P&L by Day of Week</h2>
           <p className={cn(CAP, "mt-1 mb-4")}>Net result per weekday</p>
+          <div className={BAR_HOVER}>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={byDow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -578,10 +681,11 @@ export default function AnalyticsPage() {
               <ReferenceLine y={0} stroke="var(--border)" />
               <Tooltip
                 formatter={(v: number) => [fullMoney(v), "Net P&L"]}
-                contentStyle={{ fontSize: 12, borderRadius: 8, backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" }}
-                labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
-                itemStyle={{ color: "hsl(var(--foreground))" }}
-                cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                labelFormatter={(l: any, p: any) => { const n = p?.[0]?.payload?.totalTrades; return n != null ? `${l} · ${n} trades` : String(l); }}
+                contentStyle={TIP_STYLE}
+                labelStyle={TIP_LABEL}
+                itemStyle={TIP_ITEM}
+                cursor={CURSOR_BAR}
               />
               <Bar dataKey="netPnL" radius={[4, 4, 0, 0]}>
                 {byDow.map((entry: any, i: number) => (
@@ -590,6 +694,7 @@ export default function AnalyticsPage() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Session list */}

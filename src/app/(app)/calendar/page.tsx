@@ -8,6 +8,7 @@ import {
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { cn, formatCurrency, getDurationString } from "@/lib/utils";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
+import { HoverTip, type TipRow } from "@/components/ui/HoverTip";
 import {
   PANEL, PAGE, H1, SUB, H2, CAP, KPI, TABS, TAB, TAB_ON, BTN, BTN_PRIMARY, LABEL,
   pnlColor, WIN, LOSS,
@@ -19,6 +20,10 @@ const WEEKDAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const MONTHS_FULL = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+const MOTION = "motion-reduce:transform-none motion-reduce:transition-none";
+const GLOW = "hover:shadow-[0_0_18px_rgba(79,107,255,0.45)]";
+const tone = (v: number): TipRow["tone"] => (v > 0 ? "win" : v < 0 ? "loss" : "muted");
 
 const fk = (d: Date) => format(d, "yyyy-MM-dd");
 const parseKey = (k: string) => new Date(k + "T00:00:00");
@@ -182,6 +187,20 @@ export default function CalendarPage() {
   const bestMonth = activeMonths.length ? activeMonths.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : null;
   const worstMonth = activeMonths.length ? activeMonths.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : null;
   const monthMax = Math.max(1, ...yearMonthly.map((m) => Math.abs(m.pnl)));
+  const avgMonthPnl = activeMonths.length ? yearPnL / activeMonths.length : 0;
+  const monthTip = (m: (typeof yearMonthly)[number]): { title: string; rows: TipRow[]; note: string } => {
+    const diff = m.pnl - avgMonthPnl;
+    const hasAvg = activeMonths.length > 1;
+    return {
+      title: `${m.full} ${year}`,
+      rows: m.tradeDays > 0 ? [
+        { label: "Net P&L", value: formatCurrency(m.pnl, cur), tone: tone(m.pnl) },
+        { label: "Hari trading", value: String(m.tradeDays) },
+        { label: "vs rata-rata", value: hasAvg ? formatCurrency(diff, cur) : "—", tone: hasAvg ? tone(diff) : "muted" },
+      ] : [{ label: "Hari trading", value: "0" }],
+      note: m.tradeDays > 0 ? "Rata-rata dihitung dari bulan aktif tahun ini." : "Tidak ada trade bulan ini.",
+    };
+  };
   const profitMonths = activeMonths.filter((m) => m.pnl > 0).length;
 
   // Selected day
@@ -278,7 +297,7 @@ export default function CalendarPage() {
 
               {/* Weeks */}
               <div className="flex flex-col gap-1 md:gap-2">
-                {visibleWeeks.map((wk) => {
+                {visibleWeeks.map((wk, vi) => {
                   const wi = weeks.indexOf(wk);
                   const { pnl: wPnl, tradeDays: wDays, tradeCount: wCount } = weekSummary(wk);
                   const wColors = wDays > 0 ? getCellColors(wPnl, isDark, 1) : null;
@@ -302,9 +321,10 @@ export default function CalendarPage() {
                         const entry = dataMap.get(key);
                         const c = entry ? getCellColors(entry.pnl, isDark, levelOf(entry.pnl)) : null;
                         const dim = !entry && !isToday && (di >= 5 || key > todayKey);
-                        return (
+                        const cell = (
                           <button type="button" key={di}
-                            className={cn("rounded-[13px] border min-h-[58px] md:min-h-[108px] p-1.5 md:px-3 md:py-2.5 flex flex-col items-stretch text-left gap-0.5 md:gap-1 min-w-0 transition-all active:scale-[0.97]",
+                            className={cn("relative w-full h-full rounded-[13px] border min-h-[58px] md:min-h-[108px] p-1.5 md:px-3 md:py-2.5 flex flex-col items-stretch text-left gap-0.5 md:gap-1 min-w-0 transition-[transform,box-shadow,filter,border-color,background-color] duration-200 ease-out active:scale-[0.97]", MOTION,
+                              entry && cn("hover:scale-[1.03] hover:z-20 hover:brightness-110", GLOW),
                               !c && "hover:border-[#7a8cff]/40 hover:bg-[#4f6bff]/5",
                               dim && "opacity-60")}
                             onClick={() => selectDay(day)}
@@ -333,28 +353,61 @@ export default function CalendarPage() {
                             ) : null}
                           </button>
                         );
+                        if (!entry) return cell;
+                        return (
+                          <HoverTip key={di} block className="min-w-0" side={vi < 2 ? "bottom" : "top"} align={di < 2 ? "left" : di >= 5 ? "right" : "center"}
+                            title={`${DAY_NAMES[getDay(day)]}, ${day.getDate()} ${MONTHS_SHORT[day.getMonth()]} ${day.getFullYear()}`}
+                            rows={[
+                              { label: "Net P&L", value: formatCurrency(entry.pnl, cur), tone: tone(entry.pnl) },
+                              { label: "Trades", value: String(entry.tradeCount) },
+                              { label: "Result", value: entry.pnl > 0 ? "Win day" : entry.pnl < 0 ? "Loss day" : "Break even", tone: tone(entry.pnl) },
+                            ]}
+                            note="Click to see this day's trades.">
+                            {cell}
+                          </HoverTip>
+                        );
                       })}
 
                       {/* Week summary */}
-                      <button type="button" onClick={() => selectWeek(wk)}
-                        className={cn("rounded-[13px] border min-h-[58px] md:min-h-[108px] p-1.5 md:px-3 md:py-2.5 flex flex-col items-stretch text-left gap-0.5 md:gap-1 min-w-0 overflow-hidden transition-colors hover:border-[#7a8cff]/40",
-                          !wColors && "dark:border-[#7a8cff]/15 dark:bg-gradient-to-br dark:from-[#18265c]/55 dark:to-[#0a1028]/70",
-                          wDays === 0 && "opacity-60")}
-                        style={{
-                          ...(wColors ? { background: wColors.bg, borderColor: wColors.border } : {}),
-                          ...(wSel ? { boxShadow: "0 0 0 2px #8ea2ff" } : {}),
-                        }}>
-                        <span className="text-[9px] md:text-[11px] font-bold tracking-[0.06em] uppercase text-muted-foreground dark:text-[#7d88bd] truncate">
-                          <span className="md:hidden">M{wi + 1}</span><span className="hidden md:inline">Minggu {wi + 1}</span>
-                        </span>
-                        <span className="mt-0.5 md:mt-1.5 text-[10px] md:text-[13px] font-bold font-mono tabular-nums tracking-[-0.02em] truncate"
-                          style={{ color: wColors ? wColors.sub : "hsl(var(--muted-foreground))" }}>
-                          {wDays > 0 ? fmtNum(wPnl, cur) : "—"}
-                        </span>
-                        {wDays > 0 && (
-                          <span className="text-[9px] md:text-[11px] text-muted-foreground dark:text-[#aab3df] truncate">{wCount} trade</span>
-                        )}
-                      </button>
+                      {(() => {
+                        const inMonth = wk.filter((d) => isSameMonth(d, current));
+                        const weekBtn = (
+                          <button type="button" onClick={() => selectWeek(wk)}
+                            className={cn("relative w-full h-full rounded-[13px] border min-h-[58px] md:min-h-[108px] p-1.5 md:px-3 md:py-2.5 flex flex-col items-stretch text-left gap-0.5 md:gap-1 min-w-0 overflow-hidden transition-[transform,box-shadow,border-color] duration-200 ease-out hover:border-[#7a8cff]/40", MOTION,
+                              wDays > 0 && cn("hover:-translate-y-0.5", GLOW),
+                              !wColors && "dark:border-[#7a8cff]/15 dark:bg-gradient-to-br dark:from-[#18265c]/55 dark:to-[#0a1028]/70",
+                              wDays === 0 && "opacity-60")}
+                            style={{
+                              ...(wColors ? { background: wColors.bg, borderColor: wColors.border } : {}),
+                              ...(wSel ? { boxShadow: "0 0 0 2px #8ea2ff" } : {}),
+                            }}>
+                            <span className="text-[9px] md:text-[11px] font-bold tracking-[0.06em] uppercase text-muted-foreground dark:text-[#7d88bd] truncate">
+                              <span className="md:hidden">M{wi + 1}</span><span className="hidden md:inline">Minggu {wi + 1}</span>
+                            </span>
+                            <span className="mt-0.5 md:mt-1.5 text-[10px] md:text-[13px] font-bold font-mono tabular-nums tracking-[-0.02em] truncate"
+                              style={{ color: wColors ? wColors.sub : "hsl(var(--muted-foreground))" }}>
+                              {wDays > 0 ? fmtNum(wPnl, cur) : "—"}
+                            </span>
+                            {wDays > 0 && (
+                              <span className="text-[9px] md:text-[11px] text-muted-foreground dark:text-[#aab3df] truncate">{wCount} trade</span>
+                            )}
+                          </button>
+                        );
+                        if (wDays === 0 || inMonth.length === 0) return weekBtn;
+                        const f = inMonth[0], l = inMonth[inMonth.length - 1];
+                        return (
+                          <HoverTip block className="min-w-0" side={vi < 2 ? "bottom" : "top"} align="right"
+                            title={`Minggu ${wi + 1} · ${f.getDate()} ${MONTHS_SHORT[f.getMonth()]} – ${l.getDate()} ${MONTHS_SHORT[l.getMonth()]}`}
+                            rows={[
+                              { label: "Net P&L", value: formatCurrency(wPnl, cur), tone: tone(wPnl) },
+                              { label: "Hari trading", value: String(wDays) },
+                              { label: "Trades", value: String(wCount) },
+                            ]}
+                            note="Click to focus this week.">
+                            {weekBtn}
+                          </HoverTip>
+                        );
+                      })()}
                     </div>
                   );
                 })}
@@ -387,7 +440,7 @@ export default function CalendarPage() {
                     { l: "Hari terbaik", v: monthData.length ? fmtNum(monthBest, cur) : "—", c: monthData.length ? pnlColor(monthBest) : "" },
                     { l: "Hari terburuk", v: monthData.length ? fmtNum(monthWorst, cur) : "—", c: monthData.length ? pnlColor(monthWorst) : "" },
                   ].map((r) => (
-                    <div key={r.l} className="flex items-center justify-between gap-3 text-[13px] py-[11px] border-b last:border-0 dark:border-[#7a8cff]/10">
+                    <div key={r.l} className={cn("flex items-center justify-between gap-3 text-[13px] py-[11px] border-b last:border-0 dark:border-[#7a8cff]/10 rounded-lg -mx-2 px-2 transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.09]", MOTION)}>
                       <span className={rowLbl}>{r.l}</span>
                       <b className={cn("font-mono tabular-nums", r.c)}>{r.v}</b>
                     </div>
@@ -408,7 +461,7 @@ export default function CalendarPage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2.5">
+                <div className="mt-4 flex flex-col gap-2.5 max-h-[340px] overflow-y-auto overscroll-contain pr-1.5 -mr-1.5 [scrollbar-width:thin] [scrollbar-color:rgba(122,140,255,0.4)_transparent]">
                   {dayLoading ? (
                     <>
                       <div className="h-[100px] rounded-[14px] bg-foreground/5 animate-pulse" />
@@ -425,7 +478,7 @@ export default function CalendarPage() {
                       const hold = t.entryDate && t.exitDate ? getDurationString(new Date(t.entryDate), new Date(t.exitDate)) : "—";
                       return (
                         <div key={t.id ?? `${t.symbol}-${t.entryDate}`}
-                          className="rounded-[14px] border dark:border-[#7a8cff]/15 bg-foreground/[0.03] px-4 py-3.5 flex flex-col gap-2.5">
+                          className={cn("rounded-[14px] border dark:border-[#7a8cff]/15 bg-foreground/[0.03] px-4 py-3.5 flex flex-col gap-2.5 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[#5b74ff]/50 hover:shadow-[0_8px_22px_-12px_rgba(79,107,255,0.55)]", MOTION)}>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <b className="truncate">{t.symbol}</b>
@@ -483,14 +536,16 @@ export default function CalendarPage() {
             <div className="relative h-[200px] md:h-[240px] mt-3.5 mb-1">
               <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-[#7a8cff]/30" />
               <div className="absolute inset-0 flex gap-1 md:gap-2">
-                {yearMonthly.map((m) => {
+                {yearMonthly.map((m, mi) => {
                   const h = Math.max((Math.abs(m.pnl) / monthMax) * 43, 1);
                   const pos = m.pnl >= 0;
                   return (
-                    <div key={m.name} className="flex-1 relative min-w-0" title={`${m.full}: ${formatCurrency(m.pnl, cur)}`}>
+                    <HoverTip key={m.name} block {...monthTip(m)} side="top" align={mi < 2 ? "left" : mi >= 10 ? "right" : "center"}
+                      className="flex-1 min-w-0 h-full rounded-lg transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.07] motion-reduce:transition-none">
+                    <div className="relative w-full h-full">
                       {m.tradeDays > 0 ? (
                         <>
-                          <div className={cn("absolute inset-x-[14%]", pos ? "bottom-1/2 rounded-t-lg rounded-b-[3px] bg-gradient-to-b from-[#4ade80] to-[#16a34a]" : "top-1/2 rounded-b-lg rounded-t-[3px] bg-gradient-to-b from-[#f87171] to-[#b91c1c]")}
+                          <div className={cn("absolute inset-x-[14%] transition-[filter,box-shadow] duration-200 ease-out group-hover/tip:brightness-125 group-hover/tip:shadow-[0_0_16px_rgba(79,107,255,0.5)] motion-reduce:transition-none", pos ? "bottom-1/2 rounded-t-lg rounded-b-[3px] bg-gradient-to-b from-[#4ade80] to-[#16a34a]" : "top-1/2 rounded-b-lg rounded-t-[3px] bg-gradient-to-b from-[#f87171] to-[#b91c1c]")}
                             style={{ height: `${h}%` }} />
                           <span className={cn("absolute -inset-x-2 text-center text-[9px] md:text-[11px] font-bold font-mono whitespace-nowrap", pos ? "text-emerald-600 dark:text-[#4ade80]" : "text-red-600 dark:text-[#f87171]")}
                             style={pos ? { bottom: `calc(50% + ${h}% + 4px)` } : { top: `calc(50% + ${h}% + 4px)` }}>
@@ -501,6 +556,7 @@ export default function CalendarPage() {
                         <span className="absolute top-[calc(50%-8px)] inset-x-0 text-center text-xs text-muted-foreground opacity-50">—</span>
                       )}
                     </div>
+                    </HoverTip>
                   );
                 })}
               </div>
@@ -515,11 +571,11 @@ export default function CalendarPage() {
                 const c = m.tradeDays > 0 ? getCellColors(m.pnl, isDark, 1) : null;
                 const isCurrent = i === getMonth(current);
                 return (
+                  <HoverTip key={m.name} block {...monthTip(m)} className="min-w-0" side="top" align={i % 6 === 0 ? "left" : i % 6 === 5 ? "right" : "center"}>
                   <button
                     type="button"
-                    key={m.name}
                     onClick={() => jumpMonth(year, i)}
-                    className={cn("rounded-[13px] border px-3.5 py-3 text-left flex flex-col gap-1.5 transition-all hover:border-[#7a8cff]/50 overflow-hidden min-w-0", !c && "border-dashed dark:border-[#7a8cff]/15")}
+                    className={cn("w-full h-full rounded-[13px] border px-3.5 py-3 text-left flex flex-col gap-1.5 transition-[transform,box-shadow,border-color] duration-200 ease-out hover:border-[#7a8cff]/50 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(79,107,255,0.55)] overflow-hidden min-w-0", MOTION, !c && "border-dashed dark:border-[#7a8cff]/15")}
                     style={{
                       ...(c ? { background: c.bg, borderColor: c.border } : {}),
                       ...(isCurrent ? { boxShadow: "0 0 0 2px #8ea2ff" } : {}),
@@ -534,6 +590,7 @@ export default function CalendarPage() {
                       <span className={cn(CAP, "opacity-60")}>Tanpa trade</span>
                     )}
                   </button>
+                  </HoverTip>
                 );
               })}
             </div>

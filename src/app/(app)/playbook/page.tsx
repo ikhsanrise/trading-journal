@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X, Check, AlertTriangle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HoverTip } from "@/components/ui/HoverTip";
 import { PANEL, BTN_PRIMARY, PAGE, H1, SUB, H2, CAP, LABEL, WIN, LOSS } from "@/lib/theme";
 
 const TIMEFRAMES = ["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1"];
@@ -47,6 +48,18 @@ const DEFAULT_RULES: Rule[] = [
   { id: "r3", title: "Berhenti setelah 2 loss beruntun", caption: "Perlu data jam entry untuk verifikasi penuh", status: "Sebagian" },
 ];
 
+const CAT_DESC: Record<string, string> = {
+  "A++": "Semua kriteria terpenuhi dan konfirmasi kuat",
+  "A+": "Hampir semua kriteria terpenuhi",
+  "A": "Setup valid dengan satu kriteria lemah",
+  "B": "Marginal, gunakan ukuran lot kecil",
+};
+const STATUS_NOTE: Record<Status, string> = {
+  Terjaga: "Aturan dipatuhi, tidak ada pelanggaran pada periode ini.",
+  Dilanggar: "Aturan dilanggar setidaknya sekali pada periode ini.",
+  Sebagian: "Data belum cukup untuk verifikasi penuh; aturan hanya terpantau sebagian.",
+};
+
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 function normalizeRules(v: any): Rule[] | null {
@@ -67,12 +80,14 @@ function normalizeRules(v: any): Rule[] | null {
   return out;
 }
 
-function GradeBadge({ grade, className }: { grade: string | null; className?: string }) {
+function GradeBadge({ grade, className, side = "top", align = "center" }: { grade: string | null; className?: string; side?: "top" | "bottom"; align?: "center" | "left" | "right" }) {
   if (!grade) return null;
   return (
-    <span className={cn("inline-flex items-center px-[9px] py-[3px] rounded-[7px] text-[11px] font-extrabold border", GRADE_CLS[grade], className)}>
-      {grade}
-    </span>
+    <HoverTip title={`Kategori ${grade}`} note={CAT_DESC[grade]} side={side} align={align}>
+      <span className={cn("inline-flex items-center px-[9px] py-[3px] rounded-[7px] text-[11px] font-extrabold border cursor-default transition-transform duration-200 ease-out hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none", GRADE_CLS[grade], className)}>
+        {grade}
+      </span>
+    </HoverTip>
   );
 }
 
@@ -162,7 +177,7 @@ function SetupCard({ data, sample, onEdit, onDelete }: { data: CardData; sample:
   const { wr, pf, trades } = data;
   const good = pf !== null ? pf >= 1 : wr !== null ? wr >= 50 : false;
   const bar = wr !== null ? Math.max(0, Math.min(100, wr)) : 0;
-  const tile = "rounded-xl bg-secondary/60 border border-border dark:bg-white/[0.04] dark:border-[#7a8cff]/[0.12] px-3 py-2.5 flex flex-col gap-[3px] min-w-0";
+  const tile = "rounded-xl bg-secondary/60 border border-border dark:bg-white/[0.04] dark:border-[#7a8cff]/[0.12] px-3 py-2.5 flex flex-col gap-[3px] min-w-0 h-full transition-colors duration-200 ease-out hover:border-[#5b74ff]/40 hover:bg-[#4f6bff]/10 motion-reduce:transition-none";
   const lbl = "text-xs font-medium text-muted-foreground dark:text-[#8a94c4]";
   return (
     <div className={cn(PANEL, "group p-5 md:px-6 md:py-[22px] flex flex-col gap-4 min-w-0 transition-all hover:dark:border-[#7a8cff]/40 hover:shadow-[0_20px_50px_-24px_rgba(79,107,255,0.6)]")}>
@@ -177,18 +192,27 @@ function SetupCard({ data, sample, onEdit, onDelete }: { data: CardData; sample:
         <div className="flex items-center gap-1.5 shrink-0">
           {!sample && (
             <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-              <button onClick={onEdit} aria-label="Edit setup" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground"><Pencil className="w-3.5 h-3.5" /></button>
-              <button onClick={onDelete} aria-label="Delete setup" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-500/15 hover:text-red-500 text-muted-foreground"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={onEdit} aria-label="Edit setup" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground transition-all duration-200 ease-out hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={onDelete} aria-label="Delete setup" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-500/15 hover:text-red-500 text-muted-foreground transition-all duration-200 ease-out hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           )}
-          <GradeBadge grade={data.grade} />
+          <GradeBadge grade={data.grade} side="bottom" align="right" />
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <div className={tile}><span className={lbl}>Trade</span><b className="text-base font-extrabold tabular-nums">{trades ?? "—"}</b></div>
-        <div className={tile}><span className={lbl}>Win rate</span><b className={cn("text-base font-extrabold tabular-nums", good && WIN)}>{wr !== null ? `${wr.toFixed(1)}%` : "—"}</b></div>
-        <div className={tile}><span className={lbl}>PF</span><b className={cn("text-base font-extrabold tabular-nums", pf !== null && (pf >= 1 ? WIN : LOSS))}>{pf !== null ? pf.toFixed(2) : "—"}</b></div>
+        <HoverTip block align="left" className="min-w-0" title="Trade" note="Jumlah trade yang tercatat untuk setup ini."
+          rows={[{ label: "Total", value: trades !== null ? String(trades) : "—" }]}>
+          <div className={tile}><span className={lbl}>Trade</span><b className="text-base font-extrabold tabular-nums">{trades ?? "—"}</b></div>
+        </HoverTip>
+        <HoverTip block className="min-w-0" title="Win rate" note="Persentase trade yang berakhir profit dari seluruh trade tertutup setup ini."
+          rows={[{ label: "Win rate", value: wr !== null ? `${wr.toFixed(1)}%` : "—", tone: good ? "win" : "muted" }]}>
+          <div className={tile}><span className={lbl}>Win rate</span><b className={cn("text-base font-extrabold tabular-nums", good && WIN)}>{wr !== null ? `${wr.toFixed(1)}%` : "—"}</b></div>
+        </HoverTip>
+        <HoverTip block align="right" className="min-w-0" title="Profit Factor (PF)" note="PF = gross profit ÷ gross loss. Di atas 1 berarti setup menguntungkan."
+          rows={[{ label: "PF", value: pf !== null ? pf.toFixed(2) : "—", tone: pf === null ? "muted" : pf >= 1 ? "win" : "loss" }]}>
+          <div className={tile}><span className={lbl}>PF</span><b className={cn("text-base font-extrabold tabular-nums", pf !== null && (pf >= 1 ? WIN : LOSS))}>{pf !== null ? pf.toFixed(2) : "—"}</b></div>
+        </HoverTip>
       </div>
 
       <div className="h-1.5 rounded-full bg-secondary dark:bg-white/[0.07]">
@@ -198,7 +222,7 @@ function SetupCard({ data, sample, onEdit, onDelete }: { data: CardData; sample:
       {data.checklist.length > 0 && (
         <div className="flex flex-col gap-2.5">
           {data.checklist.map((c, i) => (
-            <div key={i} className="flex items-start gap-2.5 text-[13px] leading-[1.45] text-foreground/85 dark:text-[#cdd4f5]">
+            <div key={i} className="flex items-start gap-2.5 -mx-2 px-2 rounded-lg text-[13px] leading-[1.45] text-foreground/85 dark:text-[#cdd4f5] transition-colors duration-200 ease-out hover:bg-[#4f6bff]/10 motion-reduce:transition-none">
               <Check className="w-4 h-4 mt-px shrink-0 text-[#4f6bff] dark:text-[#6f86ff]" strokeWidth={1.7} />
               <span className="min-w-0">{c}</span>
             </div>
@@ -222,7 +246,7 @@ function RuleRow({ rule, last, onChange, onDelete }: { rule: Rule; last: boolean
   const nextStatus = () => onChange({ ...rule, status: STATUS_ORDER[(STATUS_ORDER.indexOf(rule.status) + 1) % STATUS_ORDER.length] });
   const inp = "w-full text-xs px-2.5 py-1.5 rounded-lg border bg-background dark:bg-[#070b1d]/70 dark:border-[#27358a]/50 focus:outline-none focus:ring-2 focus:ring-[#4f6bff]/50";
   return (
-    <div className={cn("group flex items-center gap-3.5 py-3.5", !last && "border-b dark:border-[#7a8cff]/10")}>
+    <div className={cn("group flex items-center gap-3.5 py-3.5 -mx-2 px-2 rounded-xl transition-colors duration-200 ease-out hover:bg-[#4f6bff]/[0.07] motion-reduce:transition-none", !last && "border-b dark:border-[#7a8cff]/10")}>
       <span className={cn("w-9 h-9 rounded-[11px] border flex items-center justify-center shrink-0", STATUS_ICON_CLS[rule.status])}>
         {rule.status === "Dilanggar" ? <X className="w-4 h-4" strokeWidth={1.7} /> : <Check className="w-4 h-4" strokeWidth={1.7} />}
       </span>
@@ -239,10 +263,12 @@ function RuleRow({ rule, last, onChange, onDelete }: { rule: Rule; last: boolean
           </button>
         )}
       </div>
-      <button type="button" onClick={nextStatus} title="Klik untuk ubah status"
-        className={cn("inline-flex items-center px-[9px] py-[3px] rounded-[7px] text-[11px] font-extrabold border shrink-0", STATUS_CLS[rule.status])}>
-        {rule.status}
-      </button>
+      <HoverTip align="right" title={rule.status} note={STATUS_NOTE[rule.status]} className="shrink-0">
+        <button type="button" onClick={nextStatus}
+          className={cn("inline-flex items-center px-[9px] py-[3px] rounded-[7px] text-[11px] font-extrabold border shrink-0 transition-transform duration-200 ease-out hover:scale-[1.03] motion-reduce:transform-none motion-reduce:transition-none", STATUS_CLS[rule.status])}>
+          {rule.status}
+        </button>
+      </HoverTip>
       <button type="button" onClick={onDelete} aria-label="Hapus aturan" className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted shrink-0">
         <X className="w-3.5 h-3.5" />
       </button>
@@ -335,12 +361,6 @@ export default function PlaybookPage() {
       });
 
   const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-  const catDesc: Record<string, string> = {
-    "A++": "Semua kriteria terpenuhi dan konfirmasi kuat",
-    "A+": "Hampir semua kriteria terpenuhi",
-    "A": "Setup valid dengan satu kriteria lemah",
-    "B": "Marginal, gunakan ukuran lot kecil",
-  };
 
   return (
     <div className={PAGE}>
@@ -371,7 +391,7 @@ export default function PlaybookPage() {
             <b className="text-sm font-bold">{banner.unset} trade belum diberi setup</b>
             <div className={cn(CAP, "mt-[3px]")}>Beri tag agar statistik per setup mencakup seluruh {banner.total} transaksi Anda.</div>
           </div>
-          <a href="/trades" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-[13px] font-semibold border border-amber-500/45 text-amber-700 dark:text-[#fde68a] hover:bg-amber-500/10 transition-colors">
+          <a href="/trades" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-[13px] font-semibold border border-amber-500/45 text-amber-700 dark:text-[#fde68a] hover:bg-amber-500/10 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(79,107,255,0.5)] transition-all duration-200 ease-out motion-reduce:transform-none motion-reduce:transition-none">
             Tag sekarang <ChevronRight className="w-4 h-4" strokeWidth={1.7} />
           </a>
         </div>
@@ -431,8 +451,8 @@ export default function PlaybookPage() {
           <div className="flex flex-col gap-3.5">
             {GRADES.map(g => (
               <div key={g} className="flex items-center gap-3">
-                <GradeBadge grade={g} className="w-11 justify-center" />
-                <span className={cn(CAP, "text-[12.5px] leading-normal")}>{catDesc[g]}</span>
+                <GradeBadge grade={g} align="left" className="w-11 justify-center" />
+                <span className={cn(CAP, "text-[12.5px] leading-normal")}>{CAT_DESC[g]}</span>
               </div>
             ))}
           </div>

@@ -400,7 +400,7 @@ export function TradeScoreCard({ stats, calendar, account, className }: { stats:
         <Info className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
       </div>
 
-      <svg viewBox="0 0 340 226" className="w-full mt-1.5 mx-auto">
+      <svg viewBox="0 0 340 226" className="w-full max-w-[300px] max-h-[196px] mt-1 mx-auto">
         {[0.2, 0.4, 0.6, 0.8, 1].map((k) => (
           <polygon key={k} points={ring(k)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
         ))}

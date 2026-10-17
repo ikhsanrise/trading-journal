@@ -10,6 +10,7 @@ import TradeFormModal from "@/components/trades/TradeFormModal";
 import ImportModal from "@/components/trades/ImportModal";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
 import { PANEL, BTN_PRIMARY, PAGE, H1, SUB, BTN, CAP, WIN, LOSS } from "@/lib/theme";
+import { HoverTip, type TipRow } from "@/components/ui/HoverTip";
 
 const OUTCOME_FILTERS = [
   { label: "All", value: "" },
@@ -27,7 +28,7 @@ const PILL_ON =
   "bg-gradient-to-b from-[#5873ff] to-[#2f4bd8] text-white border-transparent shadow-[0_0_18px_-4px_rgba(79,107,255,0.75)]";
 const PILL_OFF =
   "text-muted-foreground dark:text-[#9aa4d2] border-border dark:border-white/10 hover:text-foreground dark:hover:text-[#e8ecff] hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10";
-const FP = "h-9 px-[15px] rounded-full border text-xs font-semibold transition-all";
+const FP = "h-9 px-[15px] rounded-full border text-xs font-semibold transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_6px_16px_-6px_rgba(79,107,255,0.5)] active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-none";
 const BTN_O = "border border-border dark:border-white/[0.14] bg-transparent dark:bg-white/[0.02] text-foreground/80 dark:text-[#dfe4ff] hover:border-[#4f6bff]/60 hover:bg-[#4f6bff]/10 transition-colors";
 const TH = "px-4 py-[13px] text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground dark:text-[#7d88bd] whitespace-nowrap";
 const SEC = "text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground dark:text-[#7d88bd] mb-2";
@@ -255,6 +256,23 @@ function SetupCatBadge({ cat }: { cat: string | null }) {
   return <span className={cn("text-[11px] font-bold px-2 py-[3px] rounded-md border", colors[cat] ?? "")}>{cat}</span>;
 }
 
+const money = (v: number | null | undefined, c: string) => (v == null ? "—" : formatCurrency(v, c));
+const tone = (v: number | null | undefined): TipRow["tone"] => (v == null || v === 0 ? "muted" : v > 0 ? "win" : "loss");
+
+function tradeRows(t: any, tc: string, duration: string): TipRow[] {
+  const rows: TipRow[] = [
+    { label: "Entry", value: String(t.entryPrice ?? "—") },
+    { label: "Exit", value: String(t.exitPrice ?? "—") },
+    { label: "Lot", value: String(t.lotSize ?? "—") },
+    { label: "Hold", value: duration },
+    { label: "R multiple", value: formatR(t.rMultiple ?? null), tone: tone(t.rMultiple) },
+    { label: "P&L", value: t.pnl == null ? "Open" : money(t.pnl, tc), tone: tone(t.pnl) },
+  ];
+  if (t.commission != null) rows.push({ label: "Commission", value: money(t.commission, tc), tone: "muted" });
+  if (t.swap != null) rows.push({ label: "Swap", value: money(t.swap, tc), tone: "muted" });
+  return rows;
+}
+
 function pageList(cur: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const out: (number | "…")[] = [1];
@@ -379,6 +397,14 @@ export default function TradesPage() {
   const cNet = useCountUp(sm.netPnL ?? 0);
   const cWin = useCountUp(sm.winRate ?? 0);
   const cPF = useCountUp(Math.min(sm.profitFactor ?? 0, 999));
+  const pfv: number = sm.profitFactor ?? 0;
+  const netv: number = sm.netPnL ?? 0;
+  const gross = (() => {
+    if (!(pfv > 0 && pfv < 999) || Math.abs(pfv - 1) < 1e-6) return null;
+    const gl = netv / (pfv - 1);
+    return gl > 0 ? { gp: gl * pfv, gl } : null;
+  })();
+  const openCount = summary ? Math.max(0, (sm.total ?? 0) - (sm.wins ?? 0) - (sm.losses ?? 0) - (sm.be ?? 0)) : 0;
   const filtersActive = !!(search || outcome || direction || setupCat || range.key !== "all");
 
   function resetPage<T>(setter: (v: T) => void, v: T) { setter(v); setPage(1); }
@@ -456,7 +482,6 @@ export default function TradesPage() {
 
   return (
     <div className={cn(PAGE, "relative isolate gap-5")}>
-      <Backdrop />
 
       {/* ── Header ── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -527,7 +552,16 @@ export default function TradesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 stagger">
-          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
+          <HoverTip block side="bottom" align="left" className="h-full" title="Total Trades"
+            rows={[
+              { label: "Ditampilkan", value: String(sm.total ?? 0) },
+              { label: "Win", value: String(sm.wins ?? 0), tone: "win" },
+              { label: "Loss", value: String(sm.losses ?? 0), tone: "loss" },
+              { label: "Break-even", value: String(sm.be ?? 0), tone: "muted" },
+              ...(summary ? [{ label: "Open", value: String(openCount), tone: "muted" as const }] : []),
+            ]}
+            note="Jumlah trade sesuai filter aktif.">
+          <div className={cn(PANEL, "card-hover h-full min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <IconTile><BarChart3 className="w-5 h-5" /></IconTile>
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Total Trades</p>
@@ -537,8 +571,19 @@ export default function TradesPage() {
               )}
             </div>
           </div>
+          </HoverTip>
 
-          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
+          <HoverTip block side="bottom" align="center" className="h-full" title="Net P&L"
+            rows={[
+              ...(gross ? [
+                { label: "Gross profit", value: formatCurrency(gross.gp, cur), tone: "win" as const },
+                { label: "Gross loss", value: formatCurrency(-gross.gl, cur), tone: "loss" as const },
+              ] : []),
+              { label: "Net P&L", value: formatCurrency(netv, cur), tone: tone(netv) },
+              { label: "Rata-rata / trade", value: (sm.total ?? 0) > 0 ? formatCurrency(netv / sm.total, cur) : "—", tone: tone(netv) },
+            ]}
+            note="Gross profit − gross loss dari seluruh trade pada filter ini.">
+          <div className={cn(PANEL, "card-hover h-full min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <IconTile><TrendingUp className="w-5 h-5" /></IconTile>
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Net P&L</p>
@@ -547,8 +592,17 @@ export default function TradesPage() {
               </p>
             </div>
           </div>
+          </HoverTip>
 
-          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
+          <HoverTip block side="bottom" align="center" className="h-full" title="Win Rate"
+            rows={[
+              { label: "Win", value: String(sm.wins ?? 0), tone: "win" },
+              { label: "Loss", value: String(sm.losses ?? 0), tone: "loss" },
+              { label: "Break-even", value: String(sm.be ?? 0), tone: "muted" },
+              { label: "Win rate", value: `${(sm.winRate ?? 0).toFixed(1)}%` },
+            ]}
+            note="Win ÷ (Win + Loss + B/E) dari trade yang sudah selesai.">
+          <div className={cn(PANEL, "card-hover h-full min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <WinRing pct={sm.winRate ?? 0} />
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Win Rate</p>
@@ -556,8 +610,18 @@ export default function TradesPage() {
               <p className="text-[11px] text-muted-foreground dark:text-[#8a94c4] mt-0.5">{sm.wins ?? 0}W · {sm.losses ?? 0}L{(sm.be ?? 0) > 0 ? ` · ${sm.be}BE` : ""}</p>
             </div>
           </div>
+          </HoverTip>
 
-          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
+          <HoverTip block side="bottom" align="right" className="h-full" title="Profit Factor"
+            rows={[
+              ...(gross ? [
+                { label: "Gross profit", value: formatCurrency(gross.gp, cur), tone: "win" as const },
+                { label: "Gross loss", value: formatCurrency(-gross.gl, cur), tone: "loss" as const },
+              ] : []),
+              { label: "Profit factor", value: pfv >= 999 ? "∞" : pfv.toFixed(2), tone: pfv >= 1 ? "win" : "loss" },
+            ]}
+            note="Gross profit ÷ gross loss. Di atas 1.0 berarti total keuntungan melebihi total kerugian.">
+          <div className={cn(PANEL, "card-hover h-full min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <IconTile><Trophy className="w-5 h-5" /></IconTile>
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Profit Factor</p>
@@ -566,12 +630,13 @@ export default function TradesPage() {
               </p>
             </div>
           </div>
+          </HoverTip>
         </div>
       )}
 
       {/* ── Tabel ── */}
-      <div className={cn(PANEL, "overflow-hidden")}>
-        <div className={cn("overflow-x-auto transition-opacity duration-200", loading && loaded && "opacity-60")}>
+      <div className={PANEL}>
+        <div className={cn("overflow-x-auto rounded-t-2xl transition-opacity duration-200", loading && loaded && "opacity-60")}>
           <table className="w-full min-w-[1080px] text-[13px]">
             <thead>
               <tr className="border-b border-border dark:border-[#7a8cff]/[0.14] bg-muted/40 dark:bg-[#0f1a45]/40">
@@ -611,25 +676,36 @@ export default function TradesPage() {
                     </p>
                   </td>
                 </tr>
-              ) : trades.map((t: any) => {
+              ) : trades.map((t: any, idx: number) => {
                 const duration = t.exitDate ? getDurationString(new Date(t.entryDate), new Date(t.exitDate)) : "—";
                 const isExpanded = expandedRow === t.id;
                 const tc: string = t.account?.currency ?? cur;
+                const tipSide = idx < 2 ? "bottom" : "top";
                 return (
                   <Fragment key={t.id}>
                     <tr
-                      className={cn("group border-b border-border/60 dark:border-[#7a8cff]/[0.07] hover:bg-[#2a3a9f]/[0.16] cursor-pointer transition-colors",
+                      className={cn("group border-b border-border/60 dark:border-[#7a8cff]/[0.07] hover:bg-[#2a3a9f]/[0.16] cursor-pointer transition-colors duration-200 ease-out motion-reduce:transition-none",
                         isExpanded && "bg-[#2a3a9f]/[0.12] shadow-[inset_2px_0_0_0_#4f6bff]")}
                       onClick={() => setExpandedRow(isExpanded ? null : t.id)}
                     >
-                      <td className="px-4 py-[15px] h-[52px] whitespace-nowrap transition-shadow group-hover:shadow-[inset_2px_0_0_0_#4f6bff]">
+                      <td className="px-4 py-[15px] h-[52px] whitespace-nowrap transition-shadow duration-200 ease-out motion-reduce:transition-none group-hover:shadow-[inset_3px_0_0_0_#4f6bff]">
                         <div className={cn("flex items-center gap-2", isExpanded ? "text-foreground dark:text-[#dfe4ff]" : "text-muted-foreground dark:text-[#aab3df]")}>
                           <ChevronRight className={cn("w-3.5 h-3.5 shrink-0 transition-all", isExpanded ? "rotate-90 opacity-100 text-[#8ea2ff]" : "opacity-0 group-hover:opacity-70")} />
                           {formatDate(t.entryDate)}
                         </div>
                       </td>
                       <td className="px-4 py-[15px] font-bold">{t.symbol}</td>
-                      <td className="px-4 py-[15px]"><SideBadge direction={t.direction} /></td>
+                      <td className="px-4 py-[15px]">
+                        <HoverTip side={tipSide} align="left" title={t.direction === "long" ? "Long (Buy)" : "Short (Sell)"}
+                          rows={[
+                            { label: "Entry", value: String(t.entryPrice ?? "—") },
+                            { label: "Exit", value: String(t.exitPrice ?? "—") },
+                            { label: "Lot", value: String(t.lotSize ?? "—") },
+                          ]}
+                          note={t.direction === "long" ? "Profit saat harga naik." : "Profit saat harga turun."}>
+                          <SideBadge direction={t.direction} />
+                        </HoverTip>
+                      </td>
                       <td className="px-4 py-[15px] text-right font-mono tabular-nums">{t.entryPrice}</td>
                       <td className="px-4 py-[15px] text-right font-mono tabular-nums">{t.exitPrice ?? "—"}</td>
                       <td className="px-4 py-[15px] text-right font-mono tabular-nums">{t.lotSize}</td>
@@ -640,14 +716,30 @@ export default function TradesPage() {
                           {formatR(t.rMultiple)}
                         </span>
                       </td>
-                      <td className="px-4 py-[15px] text-right whitespace-nowrap"><PnLPill value={t.pnl} currency={tc} /></td>
+                      <td className="px-4 py-[15px] text-right whitespace-nowrap">
+                        {t.pnl == null ? <PnLPill value={t.pnl} currency={tc} /> : (
+                          <HoverTip side={tipSide} title={`${t.symbol} · P&L`} rows={tradeRows(t, tc, duration)}>
+                            <PnLPill value={t.pnl} currency={tc} />
+                          </HoverTip>
+                        )}
+                      </td>
                       <td className="px-4 py-[15px]">
                         {t.setup
                           ? <span className="text-[11px] font-semibold px-2 py-[3px] rounded-md bg-muted text-muted-foreground border">{t.setup.name}</span>
                           : <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-4 py-[15px]"><SetupCatBadge cat={t.setupCategory} /></td>
-                      <td className="px-4 py-[15px]"><StatusBadge outcome={t.outcome} /></td>
+                      <td className="px-4 py-[15px]">
+                        <HoverTip side={tipSide} align="right" title={`Status · ${t.outcome ? ({ win: "Win", loss: "Loss", breakeven: "Break-even" } as Record<string, string>)[t.outcome] ?? t.outcome : "Open"}`}
+                          rows={[
+                            { label: "Hold", value: duration },
+                            { label: "R multiple", value: formatR(t.rMultiple ?? null), tone: tone(t.rMultiple) },
+                            { label: "P&L", value: t.pnl == null ? "Open" : money(t.pnl, tc), tone: tone(t.pnl) },
+                          ]}
+                          note={t.outcome ? "Hasil trade yang sudah ditutup." : "Trade belum ditutup."}>
+                          <StatusBadge outcome={t.outcome} />
+                        </HoverTip>
+                      </td>
                       <td className="px-2 py-[15px]">
                         <button onClick={(e) => openMenu(e, t.id)} aria-label="Aksi"
                           className="w-8 h-8 rounded-[9px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary dark:hover:bg-white/10 transition-colors">

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { Download, Printer, FileText, TrendingUp } from "lucide-react";
+import { HoverTip } from "@/components/ui/HoverTip";
 import { cn, formatCurrency } from "@/lib/utils";
 import { PANEL, BTN_PRIMARY, PAGE, H1, SUB, H2, CAP, BTN, pnlColor } from "@/lib/theme";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
@@ -20,11 +21,11 @@ const SECTIONS = [
 ];
 const SESSION_NAMES: Record<string, string> = { newyork: "New York", london: "London", asia: "Asia", sydney: "Sydney" };
 const sessionName = (v: any) => (typeof v === "string" ? SESSION_NAMES[v.toLowerCase().replace(/[\s_-]/g, "")] ?? v : v);
-const FP = "h-[38px] px-4 rounded-full border text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors";
-const FP_ON = "border-transparent text-white bg-gradient-to-b from-[#5873ff] to-[#2f4bd8] shadow-[0_0_18px_-4px_rgba(79,107,255,0.75)]";
-const FP_OFF = "border-border text-muted-foreground hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/50 hover:text-foreground dark:border-white/10 dark:text-[#9aa4d2] dark:hover:text-[#e8ecff]";
+const FP = "h-[38px] px-4 rounded-full border text-xs font-semibold inline-flex items-center justify-center gap-2 transition-all duration-200 ease-out hover:-translate-y-px motion-reduce:transform-none motion-reduce:transition-none";
+const FP_ON = "border-transparent text-white bg-gradient-to-b from-[#5873ff] to-[#2f4bd8] shadow-[0_0_18px_-4px_rgba(79,107,255,0.75)] hover:shadow-[0_0_22px_-3px_rgba(79,107,255,0.55)]";
+const FP_OFF = "border-border text-muted-foreground hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/50 hover:text-foreground dark:border-white/10 dark:text-[#9aa4d2] dark:hover:text-[#e8ecff] hover:shadow-[0_0_14px_-4px_rgba(79,107,255,0.45)]";
 const FL = "text-[11px] font-bold tracking-[0.1em] uppercase text-muted-foreground dark:text-[#7d88bd] mb-2.5";
-const BTN_GHOST = "border border-border bg-transparent text-foreground hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/60 dark:border-white/15 dark:text-[#dfe4ff]";
+const BTN_GHOST = "border border-border bg-transparent text-foreground hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/60 dark:border-white/15 dark:text-[#dfe4ff] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-[0_0_16px_-4px_rgba(79,107,255,0.5)] motion-reduce:transform-none motion-reduce:transition-none";
 const PK_LBL = "text-[11px] font-bold text-[#5b6391] tracking-[0.06em] uppercase";
 const HISTORY_KEY = "tj-report-history";
 
@@ -79,6 +80,13 @@ export default function ReportsPage() {
     { label: "Profit Factor", value: Number(stats.profitFactor).toFixed(2), color: "" },
     { label: "Total Trade", value: String(stats.closedTrades ?? stats.totalTrades), color: "" },
   ] : [];
+  const kpiTip = (label: string): { note: string; rows: { label: string; value: string; tone?: "win" | "loss" | "muted" }[] } => {
+    const closed = String(stats?.closedTrades ?? stats?.totalTrades ?? "-");
+    if (label === "Net P&L") return { note: "Net P&L = total profit − total loss (setelah biaya) pada periode ini.", rows: [{ label: "Periode", value: String(periodLabel ?? "-"), tone: "muted" }] };
+    if (label === "Win Rate") return { note: "Win Rate = trade menang ÷ trade tertutup × 100%.", rows: [{ label: "Trade tertutup", value: closed }] };
+    if (label === "Profit Factor") return { note: "Profit Factor = gross profit ÷ gross loss. Di atas 1 berarti profitable.", rows: [{ label: "Status", value: Number(stats?.profitFactor) >= 1 ? "Profitable" : "Belum profit", tone: Number(stats?.profitFactor) >= 1 ? "win" : "loss" }] };
+    return { note: "Total Trade = jumlah trade tertutup pada periode laporan.", rows: [{ label: "Tertutup", value: closed }] };
+  };
 
   return (
     <div className={PAGE}>
@@ -122,7 +130,7 @@ export default function ReportsPage() {
                 </button>
               ))}
             </div>
-            <button onClick={download} className={cn(BTN, BTN_PRIMARY, "w-full justify-center mt-5 h-11 transition")}>
+            <button onClick={download} className={cn(BTN, BTN_PRIMARY, "w-full justify-center mt-5 h-11 transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-[0_10px_28px_-6px_rgba(79,107,255,0.55)] motion-reduce:transform-none motion-reduce:transition-none")}>
               {fmt === "PDF" ? <Printer className="w-4 h-4" /> : <Download className="w-4 h-4" />}Unduh Laporan
             </button>
             <p className={cn(CAP, "mt-3 text-[11px]")}>CSV berisi semua trade akun terpilih. PDF dibuat dari preview lewat dialog cetak browser (pilih “Simpan sebagai PDF”).</p>
@@ -148,12 +156,17 @@ export default function ReportsPage() {
               <div className="space-y-6">
                 {has("summary") && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                    {kpis.map(k => (
-                      <div key={k.label} className="flex flex-col gap-[3px] px-3.5 py-3 rounded-[10px] bg-[#e9ecf8] min-w-0">
-                        <span className={PK_LBL}>{k.label}</span>
-                        <b className={cn("text-[15px] font-mono tabular-nums truncate", k.label === "Net P&L" ? (stats.netPnL > 0 ? "text-[#15803d]" : stats.netPnL < 0 ? "text-[#b91c1c]" : "") : "")}>{k.value}</b>
-                      </div>
-                    ))}
+                    {kpis.map((k, ki) => {
+                      const tip = kpiTip(k.label);
+                      return (
+                        <HoverTip key={k.label} block side="bottom" align={ki % 2 === 0 ? "left" : "right"} className="min-w-0 print:[&>[role=tooltip]]:hidden" title={k.label} note={tip.note} rows={tip.rows}>
+                          <div className="h-full flex flex-col gap-[3px] px-3.5 py-3 rounded-[10px] bg-[#e9ecf8] min-w-0 transition-colors duration-200 ease-out hover:bg-[#dde2f6] motion-reduce:transition-none">
+                            <span className={PK_LBL}>{k.label}</span>
+                            <b className={cn("text-[15px] font-mono tabular-nums truncate", k.label === "Net P&L" ? (stats.netPnL > 0 ? "text-[#15803d]" : stats.netPnL < 0 ? "text-[#b91c1c]" : "") : "")}>{k.value}</b>
+                          </div>
+                        </HoverTip>
+                      );
+                    })}
                   </div>
                 )}
                 {has("session") && (
@@ -193,7 +206,7 @@ export default function ReportsPage() {
               </thead>
               <tbody>
                 {history.map((h, i) => (
-                  <tr key={i} className="border-b last:border-b-0 dark:border-[#7a8cff]/[0.07] hover:bg-[#2a3a9f]/10 dark:hover:bg-[#2a3a9f]/[0.14]">
+                  <tr key={i} className="border-b last:border-b-0 dark:border-[#7a8cff]/[0.07] transition-colors duration-200 ease-out motion-reduce:transition-none hover:bg-[#2a3a9f]/10 dark:hover:bg-[#2a3a9f]/[0.14]">
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className="inline-flex items-center gap-2.5">
                         <span className="w-9 h-9 rounded-[11px] flex items-center justify-center border border-[#5b74ff]/30 bg-[#4f6bff]/10 text-[#4f6bff] dark:text-[#9fb0ff]"><FileText className="w-4 h-4" /></span>
@@ -229,7 +242,7 @@ function Table({ title, head, rows, cur, monoCols = [], capCols = [] }: { title:
           <thead><tr className="text-left text-[#7a82ad]">{head.map((h, i) => <th key={h} className={cn("py-2 font-semibold", i === last && "text-right")}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.map((r, ri) => (
-              <tr key={ri} className="border-t border-[#e1e4f2]">
+              <tr key={ri} className="border-t border-[#e1e4f2] transition-colors duration-200 ease-out hover:bg-[#4f6bff]/10 motion-reduce:transition-none">
                 {r.map((c, j) => {
                   if (j === last && typeof c === "number")
                     return <td key={j} className={cn("py-2.5 text-right font-mono tabular-nums font-bold", c > 0 ? "text-[#15803d]" : c < 0 ? "text-[#b91c1c]" : "text-[#5b6391]")}>{formatCurrency(c, cur)}</td>;

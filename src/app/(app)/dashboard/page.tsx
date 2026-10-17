@@ -4,9 +4,13 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, ReferenceLine, Cell,
 } from "recharts";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { cn, formatCurrency, formatR } from "@/lib/utils";
 import Link from "next/link";
+import {
+  PANEL, BTN_PRIMARY, PAGE, H1, SUB, H2, CAP, CHIP, CHIP_G, CHIP_R, CHIP_B,
+  TABS, TAB, TAB_ON, BTN, pnlColor, WIN, LOSS,
+} from "@/lib/theme";
 import { KpiRow, TradeScoreCard } from "@/components/dashboard/KpiCards";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -21,7 +25,8 @@ const PERIODS = [
   { label: "All", value: "all" },
 ];
 
-const CURVE_COLOR = "#6366f1";
+const CURVE_COLOR = "#7c93ff";
+const CAL_GRID = "grid grid-cols-[repeat(7,minmax(0,1fr))_56px] md:grid-cols-[repeat(7,minmax(0,1fr))_112px] gap-1 md:gap-1.5";
 const DAYS_OF_WEEK_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
 const TOOLTIP_STYLE = {
@@ -35,10 +40,10 @@ const TOOLTIP_STYLE = {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3 card-hover">
-      <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
-      <p className={cn("text-base font-semibold tracking-tight truncate", color ?? "text-foreground")}>{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+    <div className={cn(PANEL, "flex-[1_1_200px] min-w-0 px-6 py-5 flex flex-col gap-1.5 card-hover")}>
+      <span className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">{label}</span>
+      <div className={cn("text-2xl font-extrabold tracking-[-0.02em] truncate", color ?? "text-foreground")}>{value}</div>
+      {sub ? <span className={CAP}>{sub}</span> : <span className={CAP}>&nbsp;</span>}
     </div>
   );
 }
@@ -52,7 +57,7 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
   const start = startOfMonth(current);
   const end = endOfMonth(current);
   const days = eachDayOfInterval({ start, end });
-  const startDow = getDay(start);
+  const startDow = (getDay(start) + 6) % 7; // minggu dimulai Senin
 
   function summarizeWeek(wdays: any[]) {
     let pnl = 0, tradeDays = 0, tradeCount = 0;
@@ -80,10 +85,10 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
   function getCellColors(pnl: number) {
     const isDark = typeof window !== "undefined" && document.documentElement.classList.contains("dark");
     if (pnl > 0) return isDark
-      ? { bg: "rgba(22,163,74,0.2)", border: "rgba(22,163,74,0.6)", text: "#86efac" }
+      ? { bg: "rgba(34,197,94,0.16)", border: "rgba(74,222,128,0.4)", text: "#4ade80" }
       : { bg: "#f0fdf4", border: "#86efac", text: "#15803d" };
     if (pnl < 0) return isDark
-      ? { bg: "rgba(220,38,38,0.2)", border: "rgba(220,38,38,0.6)", text: "#fca5a5" }
+      ? { bg: "rgba(239,68,68,0.18)", border: "rgba(248,113,113,0.42)", text: "#f87171" }
       : { bg: "#fff1f2", border: "#fca5a5", text: "#b91c1c" };
     return { bg: "transparent", border: "hsl(var(--border))", text: "#64748b" };
   }
@@ -91,42 +96,42 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
   const fmtPnl = (v: number) => formatCurrency(v, currency ?? "USD");
 
   return (
-    <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
+    <div className={cn(PANEL, "px-4 md:px-6 py-[22px] min-w-0")}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => setCurrent(subMonths(current, 1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors border">
-            <ChevronLeft className="w-3.5 h-3.5" />
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-2.5">
+          <button aria-label="Bulan sebelumnya" onClick={() => setCurrent(subMonths(current, 1))} className="w-[34px] h-[34px] flex items-center justify-center rounded-[10px] border dark:border-white/[0.12] dark:text-[#c7d0ff] hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/50 transition-colors">
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-xs font-semibold min-w-[110px] text-center">{format(current, "MMMM yyyy")}</span>
-          <button onClick={() => setCurrent(addMonths(current, 1))} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors border">
-            <ChevronRight className="w-3.5 h-3.5" />
+          <h2 className={cn(H2, "min-w-[120px] text-center")}>{format(current, "MMMM yyyy")}</h2>
+          <button aria-label="Bulan berikutnya" onClick={() => setCurrent(addMonths(current, 1))} className="w-[34px] h-[34px] flex items-center justify-center rounded-[10px] border dark:border-white/[0.12] dark:text-[#c7d0ff] hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/50 transition-colors">
+            <ChevronRight className="w-4 h-4" />
           </button>
-          <button onClick={() => setCurrent(new Date())} className="text-[10px] px-2 py-1 rounded-lg border text-muted-foreground hover:bg-muted transition-colors">
+          <button onClick={() => setCurrent(new Date())} className="h-8 px-3 rounded-[10px] border text-xs font-semibold dark:border-white/[0.14] dark:text-[#dfe4ff] hover:bg-[#4f6bff]/10 hover:border-[#4f6bff]/50 transition-colors">
             Now
           </button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={cn("font-semibold text-xs", totalPnl >= 0 ? "text-[#16a34a]" : "text-[#dc2626]")}>{fmtPnl(totalPnl)}</span>
-          <span className="text-[10px] text-muted-foreground">{totalTradeDays}d</span>
+        <div className="flex items-center gap-2.5">
+          <b className={cn("font-mono text-sm", pnlColor(totalPnl))}>{(totalPnl > 0 ? "+" : "") + fmtPnl(totalPnl)}</b>
+          <span className={cn(CHIP, CHIP_B)}>{totalTradeDays}d</span>
         </div>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-8 gap-1 mb-1.5">
-        {["S","M","T","W","T","F","S","Wk"].map((d, i) => (
-          <div key={i} className="text-center text-[9px] font-medium text-muted-foreground">{d}</div>
+      <div className={CAL_GRID + " mb-1.5"}>
+        {["Sen","Sel","Rab","Kam","Jum","Sab","Min","Wk"].map((d, i) => (
+          <div key={i} className={cn("text-[10px] md:text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground dark:text-[#7d88bd] px-1 pb-0.5", i === 7 && "text-right")}>{d}</div>
         ))}
       </div>
 
       {/* Weeks */}
+      <div className="flex flex-col gap-1.5">
       {weeks.map((wk, wi) => {
         const { pnl: wPnl, tradeDays: wDays, tradeCount: wTrades } = summarizeWeek(wk);
-        const wColors = wDays > 0 ? getCellColors(wPnl) : null;
         return (
-          <div key={wi} className="grid grid-cols-8 gap-1 mb-1">
+          <div key={wi} className={CAL_GRID}>
             {wk.map((day, di) => {
-              if (!day) return <div key={di} className="rounded-xl border border-dashed border-border/30 h-10 md:h-16" />;
+              if (!day) return <div key={di} className="rounded-[11px] border border-dashed border-border/40 dark:border-[#7a8cff]/[0.07] min-h-[52px] md:min-h-[70px]" />;
               const key = format(day, "yyyy-MM-dd");
               const entry = dataMap.get(key);
               const c = entry ? getCellColors(entry.pnl) : null;
@@ -135,45 +140,50 @@ function CalendarHeatmap({ calendarData, currency }: { calendarData: any[]; curr
                 <div key={di}
                   role={entry ? "button" : undefined}
                   onClick={() => { if (entry) setSelectedDay({ date: key, entry }); }}
-                  className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between cal-cell"
+                  className={cn(
+                    "rounded-[11px] border min-h-[52px] md:min-h-[70px] min-w-0 px-1.5 py-1.5 md:px-2.5 md:py-2 flex flex-col gap-[3px] cal-cell",
+                    !c && "dark:bg-white/[0.02] dark:border-[#7a8cff]/10 hover:dark:border-[#7a8cff]/40 hover:dark:bg-[#4f6bff]/[0.07]",
+                    !c && di >= 5 && !isToday && "opacity-60"
+                  )}
                   style={c
-                    ? { background: c.bg, borderColor: c.border, cursor: entry ? "pointer" : "default" }
-                    : { background: "var(--card)", borderColor: isToday ? "#6366f1" : "hsl(var(--border))", cursor: entry ? "pointer" : "default" }
+                    ? { background: c.bg, borderColor: c.border, cursor: "pointer" }
+                    : { borderColor: isToday ? "#5b74ff" : undefined, boxShadow: isToday ? "0 0 0 3px rgba(79,107,255,0.18)" : undefined, cursor: entry ? "pointer" : "default" }
                   }>
-                  <p className={cn("text-[9px] font-semibold leading-none", isToday && !c ? "text-indigo-500" : "text-muted-foreground")}>
+                  <span className={cn("text-[10px] md:text-[11.5px] font-bold leading-none", isToday && !c ? "text-[#4f6bff] dark:text-[#c7d0ff]" : "text-muted-foreground dark:text-[#9aa4d2]")} style={c ? { color: c.text } : undefined}>
                     {format(day, "d")}
-                  </p>
+                  </span>
                   {entry && (
                     <>
-                      <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: c?.text }}>
+                      <span className="font-mono tabular-nums text-[8px] md:text-xs font-bold leading-tight tracking-[-0.03em] mt-auto break-words" style={{ color: c?.text }}>
                         {fmtPnl(entry.pnl)}
-                      </p>
-                      <p className="text-[6px] md:text-[9px] leading-none" style={{ color: c?.text, opacity: 0.7 }}>
-                        {entry.tradeCount} {entry.tradeCount === 1 ? "Trade" : "Trades"}
-                      </p>
+                      </span>
+                      <span className="text-[8px] md:text-[10.5px] leading-none" style={{ color: c?.text, opacity: 0.75 }}>
+                        {entry.tradeCount} {entry.tradeCount === 1 ? "trade" : "trades"}
+                      </span>
                     </>
                   )}
                 </div>
               );
             })}
             {/* Week summary */}
-            <div className="rounded-xl border h-10 md:h-16 p-1 md:p-2 flex flex-col justify-between"
+            <div className={cn("rounded-[11px] border min-h-[52px] md:min-h-[70px] min-w-0 px-1.5 py-1.5 md:px-2.5 md:py-2 flex flex-col gap-[3px] dark:border-[#7a8cff]/[0.16] dark:bg-gradient-to-br dark:from-[#18265c]/55 dark:to-[#0a1028]/70")}
               role={wDays > 0 ? "button" : undefined}
               onClick={() => { if (wDays > 0) setSelectedWeek({ week: wi + 1, pnl: wPnl, days: wDays, count: wTrades }); }}
-              style={wColors ? { background: wColors.bg, borderColor: wColors.border, cursor: wDays > 0 ? "pointer" : "default" } : { borderColor: "hsl(var(--border))", cursor: wDays > 0 ? "pointer" : "default" }}>
-              <p className="text-[7px] md:text-[10px] text-muted-foreground leading-none">W{wi + 1}</p>
-              <p className="text-[7px] md:text-[11px] font-bold leading-none truncate" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))" }}>
+              style={{ cursor: wDays > 0 ? "pointer" : "default" }}>
+              <span className="text-[9px] md:text-[10.5px] font-bold uppercase tracking-[0.06em] text-muted-foreground dark:text-[#7d88bd] leading-none">W{wi + 1}</span>
+              <span className={cn("font-mono tabular-nums text-[8px] md:text-xs font-bold leading-tight tracking-[-0.03em] mt-auto break-words", wDays > 0 ? pnlColor(wPnl) : "text-muted-foreground dark:text-[#8a94c4]")}>
                 {fmtPnl(wDays > 0 ? wPnl : 0)}
-              </p>
+              </span>
               {wTrades > 0 && (
-                <p className="text-[6px] md:text-[9px] leading-none" style={{ color: wColors ? wColors.text : "hsl(var(--muted-foreground))", opacity: 0.7 }}>
-                  {wTrades} {wTrades === 1 ? "Trade" : "Trades"}
-                </p>
+                <span className="text-[8px] md:text-[10.5px] leading-none text-muted-foreground dark:text-[#aab3df]">
+                  {wTrades} {wTrades === 1 ? "trade" : "trades"}
+                </span>
               )}
             </div>
           </div>
         );
       })}
+      </div>
       {/* Day popup */}
       {selectedDay && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedDay(null)}>
@@ -418,7 +428,7 @@ export default function DashboardPage() {
     dowPnl[dow].count += d.tradeCount;
   }
   const dowEntries = Object.entries(dowPnl);
-  const dowLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dowLabels = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
   const dowRows = [1,2,3,4,5,6,0]
     .filter(d => dowPnl[d] || (d >= 1 && d <= 5))
     .map(d => ({ dow: d, label: dowLabels[d], pnl: dowPnl[d]?.pnl ?? 0 }));
@@ -437,6 +447,8 @@ export default function DashboardPage() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   })();
 
+  const fmtNum = (v: number) => `${v >= 0 ? "+" : "-"}${Math.abs(Math.round(v)).toLocaleString(cur === "IDR" ? "id-ID" : "en-US")}`;
+
   const sessionLabel: Record<string, string> = {
     london: "London", newyork: "New York", asia: "Asia", sydney: "Sydney", unknown: "Unknown",
   };
@@ -452,56 +464,72 @@ export default function DashboardPage() {
     return formatCurrency(v, cur);
   };
 
+  const periodTabs = (
+    <div className={TABS}>
+      {PERIODS.map((p) => (
+        <button key={p.value} onClick={() => setPeriod(p.value)} className={cn(TAB, period === p.value && TAB_ON)}>
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const todayLabel = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const curveFrom = rawCurve.length ? String(rawCurve[0].date).slice(5) : "";
+  const curveTo = rawCurve.length ? String(rawCurve[rawCurve.length - 1].date).slice(5) : "";
+  const TILE = "rounded-[14px] border bg-secondary/40 dark:border-[#7a8cff]/[0.14] dark:bg-white/[0.03] px-4 py-[14px] flex flex-col gap-1.5 flex-[1_1_120px] min-w-0";
+  const TILE_LABEL = "text-[10.5px] font-bold tracking-[0.08em] uppercase text-muted-foreground dark:text-[#8a94c4]";
+
   return (
-    <div className="p-4 space-y-4 min-h-screen">
+    <div className={cn(PAGE, "min-h-screen")}>
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">Dashboard</span>
-          {data?.accounts && data.accounts.length > 0 && (
-            <div className="relative">
-              <button onClick={() => setAccountOpen(!accountOpen)}
-                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 hover:border-indigo-400 transition-colors">
-                <span className="truncate max-w-[120px]">{data.account?.name ?? "Select"}</span>
-                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </button>
-              {accountOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
-                  <div className="absolute left-0 top-8 z-50 min-w-[180px] border rounded-xl shadow-2xl py-1 overflow-hidden" style={{ backgroundColor: "hsl(var(--card))" }}>
-                    {data.accounts.map((acc: any) => (
-                      <button key={acc.id} onClick={() => { setSelectedAccountId(acc.id); setAccountOpen(false); }}
-                        className={cn("w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
-                          (selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && "text-indigo-400 font-medium")}>
-                        <span className="truncate">{acc.name}</span>
-                        {(selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && (
-                          <svg className="w-3 h-3 shrink-0 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-1">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className={H1}>Dashboard</h1>
+            {data?.accounts && data.accounts.length > 0 && (
+              <div className="relative">
+                <button onClick={() => setAccountOpen(!accountOpen)}
+                  className="inline-flex items-center gap-2 h-[30px] px-3 rounded-[9px] border border-[#7a8cff]/35 bg-[#4f6bff]/[0.14] text-[#4f6bff] dark:text-[#c7d0ff] text-xs font-semibold hover:border-[#7a8cff] transition-colors">
+                  <span className="truncate max-w-[160px]">{data.account?.name ?? "Select"}</span>
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {accountOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
+                    <div className="absolute left-0 top-9 z-50 min-w-[180px] border rounded-xl shadow-2xl py-1 overflow-hidden" style={{ backgroundColor: "hsl(var(--card))" }}>
+                      {data.accounts.map((acc: any) => (
+                        <button key={acc.id} onClick={() => { setSelectedAccountId(acc.id); setAccountOpen(false); }}
+                          className={cn("w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
+                            (selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && "text-indigo-400 font-medium")}>
+                          <span className="truncate">{acc.name}</span>
+                          {(selectedAccountId === acc.id || (!selectedAccountId && acc.isDefault)) && (
+                            <svg className="w-3 h-3 shrink-0 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          <p className={SUB}>Ringkasan performa akun {data?.account?.name ?? ""} · {todayLabel}</p>
         </div>
-        <div className="flex items-center gap-1">
-          {PERIODS.map((p) => (
-            <button key={p.value} onClick={() => setPeriod(p.value)}
-              className={cn("text-[11px] px-2.5 py-1 rounded-lg transition-colors font-medium",
-                period === p.value ? "bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              {p.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {periodTabs}
+          <Link href="/trades" className={cn(BTN, BTN_PRIMARY)}>
+            <Plus className="w-4 h-4" />Add Trade
+          </Link>
         </div>
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-32 rounded-2xl" />)}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[148px] rounded-2xl" />)}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-4">
             <div className="skeleton h-[330px] rounded-2xl" />
             <div className="skeleton h-[330px] rounded-2xl" />
           </div>
@@ -512,82 +540,89 @@ export default function DashboardPage() {
           <KpiRow stats={stats} calendar={calendar} currency={cur} />
 
           {/* ── ROW 2: NET P&L + DAY EXTREMES ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-            <div className="rounded-2xl p-4 border relative overflow-hidden card-hover"
-              style={{
-                background: stats?.netPnL >= 0 ? "linear-gradient(135deg, rgba(22,163,74,0.14), rgba(22,163,74,0.04))" : "linear-gradient(135deg, rgba(220,38,38,0.14), rgba(220,38,38,0.04))",
-                borderColor: stats?.netPnL >= 0 ? "rgba(22,163,74,0.3)" : "rgba(220,38,38,0.3)",
-              }}>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Net P&L</p>
-              <p className={cn("text-2xl font-bold tracking-tight", stats?.netPnL >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
+          <div className="flex flex-wrap gap-4 stagger">
+            <div className={cn(
+              "flex-[1.5_1_300px] min-w-0 rounded-2xl border px-6 py-5 flex flex-col gap-1.5 relative overflow-hidden card-hover",
+              stats?.netPnL >= 0
+                ? "border-emerald-500/35 bg-emerald-500/[0.07] dark:bg-gradient-to-br dark:from-[#166534]/30 dark:to-[#0a1028]/80"
+                : "border-red-500/35 bg-red-500/[0.07] dark:bg-gradient-to-br dark:from-[#7f1d1d]/30 dark:to-[#0a1028]/80"
+            )}>
+              <span className={cn("text-[11px] font-bold tracking-[0.08em] uppercase", stats?.netPnL >= 0 ? "text-emerald-700 dark:text-[#86efac]" : "text-red-700 dark:text-[#fca5a5]")}>Net P&amp;L</span>
+              <div className={cn("text-[36px] font-extrabold tracking-[-0.025em] tabular-nums leading-[1.05] mt-1 break-words", stats?.netPnL >= 0 ? "text-emerald-600 dark:text-[#4ade80]" : "text-red-600 dark:text-[#f87171]")}>
                 {stats ? formatCurrency(stats.netPnL, cur) : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1">{stats?.closedTrades ?? 0} trades closed</p>
+              </div>
+              <span className={CAP}>{stats?.closedTrades ?? 0} trades closed</span>
             </div>
-            <StatCard label="Best Day" value={bestDay ? fmtK(bestDay.pnl) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? "text-[#4ade80]" : undefined} />
-            <StatCard label="Worst Day" value={worstDay ? fmtK(worstDay.pnl) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? "text-[#f87171]" : undefined} />
+            <StatCard label="Best Day" value={bestDay ? fmtK(bestDay.pnl) : "—"} sub={bestDay ? format(new Date(bestDay.date), "EEE, MMM d") : undefined} color={bestDay?.pnl > 0 ? WIN : undefined} />
+            <StatCard label="Worst Day" value={worstDay ? fmtK(worstDay.pnl) : "—"} sub={worstDay ? format(new Date(worstDay.date), "EEE, MMM d") : undefined} color={worstDay?.pnl < 0 ? LOSS : undefined} />
             <StatCard label="Avg Hold" value={avgDuration ?? "—"} sub="per trade" />
           </div>
 
           {/* ── ROW 3: EQUITY CURVE + TRADE SCORE ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-3 stagger">
-            <div className="min-w-0 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold">Equity Curve</p>
-                <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
-                  {(["daily", "weekly", "monthly"] as const).map((v) => (
-                    <button key={v} onClick={() => setEquityView(v)}
-                      className={cn("text-[9px] px-2 py-0.5 rounded-md font-medium transition-colors capitalize",
-                        equityView === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
-                      {v.slice(0, 1).toUpperCase() + v.slice(1, 3)}
+          <div className="flex flex-wrap gap-4 items-stretch stagger">
+            <div className={cn(PANEL, "flex-[3_1_640px] min-w-0 px-4 md:px-6 py-[22px] card-hover")}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className={H2}>Equity Curve</h2>
+                  <div className={cn(CAP, "mt-1")}>Akumulasi P&amp;L per trade{curveFrom ? ` · ${curveFrom} sampai ${curveTo}` : ""}</div>
+                </div>
+                <div className={TABS}>
+                  {([["daily", "Day"], ["weekly", "Week"], ["monthly", "Month"]] as const).map(([v, lbl]) => (
+                    <button key={v} onClick={() => setEquityView(v)} className={cn(TAB, equityView === v && TAB_ON)}>
+                      {lbl}
                     </button>
                   ))}
                 </div>
               </div>
+              <div className="mt-3.5">
               {cumulativeCurve.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <AreaChart data={cumulativeCurve} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={272}>
+                  <AreaChart data={cumulativeCurve} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={CURVE_COLOR} stopOpacity={0.4} />
-                        <stop offset="100%" stopColor={CURVE_COLOR} stopOpacity={0} />
+                        <stop offset="0%" stopColor="#4f6bff" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="#4f6bff" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} width={48} axisLine={false} tickLine={false}
+                    <CartesianGrid strokeDasharray="3 5" stroke="rgba(122,140,255,0.13)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10.5, fill: "#7d88bd" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10.5, fill: "#7d88bd" }} width={60} axisLine={false} tickLine={false}
                       tickFormatter={(v) => { const a = Math.abs(v); return a >= 1e9 ? `${sym}${(v / 1e9).toFixed(1)}B` : a >= 1e6 ? `${sym}${(v / 1e6).toFixed(1)}M` : a >= 1e3 ? `${sym}${(v / 1e3).toFixed(0)}K` : `${sym}${v}`; }} />
-                    <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 2" />
+                    <ReferenceLine y={0} stroke="rgba(165,180,255,0.35)" strokeDasharray="4 4" />
                     <Tooltip formatter={(v: number) => [formatCurrency(v, cur, true), "Equity"]} contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "rgba(255,255,255,0.5)" }} itemStyle={{ color: CURVE_COLOR }} />
-                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2} fill="url(#eqGrad)" isAnimationActive animationDuration={1400} animationEasing="ease-out" dot={false} activeDot={{ r: 4, fill: CURVE_COLOR, strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="pnl" stroke={CURVE_COLOR} strokeWidth={2.4} fill="url(#eqGrad)" isAnimationActive animationDuration={1400} animationEasing="ease-out" dot={false} activeDot={{ r: 4.5, fill: "#fff", stroke: "#4f6bff", strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : <div className="h-44 flex items-center justify-center text-xs text-muted-foreground">No data yet</div>}
+              </div>
             </div>
-            <TradeScoreCard stats={stats} calendar={calendar} account={data?.account} />
+            <TradeScoreCard className="flex-[1_1_320px]" stats={stats} calendar={calendar} account={data?.account} />
           </div>
 
-          {/* ── ROW 4: EARNINGS + GOAL ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.7fr] gap-3 stagger">
+          {/* ── ROW 4: EARNINGS + GOAL + SESSION/DAY ── */}
+          <div className="flex flex-wrap gap-4 items-stretch stagger">
             {/* Earnings */}
-            <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover">
-              <p className="text-xs font-semibold mb-3">Earnings</p>
-              <div className="grid grid-cols-3 gap-2">
+            <div className={cn(PANEL, "flex-[1_1_280px] min-w-0 px-6 py-[22px] flex flex-col gap-4 card-hover")}>
+              <h2 className={H2}>Earnings</h2>
+              <div className="grid grid-cols-2 gap-2.5">
                 {[
                   { label: "Today", pnl: todayPnl, prev: prevDayPnl },
                   { label: "This Week", pnl: weekPnl, prev: prevWeekPnl },
                   { label: "This Month", pnl: monthPnl, prev: prevMonthPnl },
                 ].map(({ label, pnl, prev }) => {
                   const pct = pctChange(pnl, prev);
+                  const isMonth = label === "This Month";
                   return (
-                    <div key={label} className="bg-muted/30 rounded-xl p-2.5">
-                      <p className="text-[9px] text-muted-foreground mb-1 uppercase tracking-wide">{label}</p>
-                      <p className={cn("text-xs font-bold", pnl >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>{fmtK(pnl)}</p>
-                      {pct !== null && (
-                        <p className={cn("text-[9px] mt-0.5", pct >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
+                    <div key={label} className={cn(TILE, isMonth && "col-span-2 border-emerald-500/30 bg-emerald-500/[0.07] dark:border-[#22c55e]/30 dark:bg-[#22c55e]/[0.07]")}>
+                      <span className={TILE_LABEL}>{label}</span>
+                      <b className={cn("text-lg", pnl >= 0 ? WIN : LOSS)}>{fmtK(pnl)}</b>
+                      {pct !== null ? (
+                        <span className={cn(CHIP, "self-start !h-5 !text-[10.5px]", pct >= 0 ? CHIP_G : CHIP_R)}>
                           {pct >= 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}%
-                        </p>
-                      )}
+                        </span>
+                      ) : pnl === 0 ? (
+                        <span className="text-[11px] text-muted-foreground dark:text-[#8a94c4]">belum ada trade</span>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -595,105 +630,111 @@ export default function DashboardPage() {
             </div>
 
             {/* Monthly Goal */}
-            <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold">Monthly Goal</p>
+            <div className={cn(PANEL, "flex-[1_1_280px] min-w-0 px-6 py-[22px] flex flex-col gap-3 card-hover")}>
+              <div className="flex items-center justify-between">
+                <h2 className={H2}>Monthly Goal</h2>
                 <button onClick={() => { setEditingGoal(true); setGoalInput(String(monthlyGoal || "")); }}
-                  className="text-[10px] text-indigo-400 hover:underline">{monthlyGoal > 0 ? "Edit" : "Set Goal"}</button>
+                  className="text-xs font-bold text-indigo-600 dark:text-[#8ea2ff] hover:underline">{monthlyGoal > 0 ? "Edit" : "Set Goal"}</button>
               </div>
               {editingGoal ? (
                 <div className="flex items-center gap-2 mt-2">
                   <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)} placeholder="e.g. 10000000"
-                    className="flex-1 text-xs border rounded-xl px-2 py-1.5 bg-background" />
-                  <button onClick={saveGoal} disabled={savingGoal} className="text-[10px] px-2.5 py-1.5 bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white rounded-xl disabled:opacity-50">{savingGoal ? "..." : "Save"}</button>
-                  <button onClick={() => setEditingGoal(false)} className="text-[10px] text-muted-foreground">✕</button>
+                    className="flex-1 min-w-0 text-sm border rounded-xl px-3 py-2 bg-background" />
+                  <button onClick={saveGoal} disabled={savingGoal} className={cn("text-xs font-semibold px-3 py-2 rounded-xl disabled:opacity-50", BTN_PRIMARY)}>{savingGoal ? "..." : "Save"}</button>
+                  <button onClick={() => setEditingGoal(false)} className="text-xs text-muted-foreground">✕</button>
                 </div>
               ) : monthlyGoal > 0 ? (
-                <div className="flex items-center gap-4">
-                  <div className="relative w-28 h-14">
-                    <svg viewBox="0 0 120 60" className="w-full h-full">
-                      <defs><filter id="glow2"><feGaussianBlur stdDeviation="3" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-                      <path d="M 8 60 A 52 52 0 0 1 112 60" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" strokeLinecap="round"/>
-                      <path d="M 8 60 A 52 52 0 0 1 112 60" fill="none" stroke={goalPct >= 100 ? "#4ade80" : "#818cf8"} strokeWidth="10" strokeLinecap="round"
-                        strokeDasharray={`${Math.min(goalPct,100)*1.634} 163.4`} filter="url(#glow2)"/>
-                      <text x="60" y="52" textAnchor="middle" fontSize="13" fontWeight="bold" fill={goalPct >= 100 ? "#4ade80" : "#818cf8"}>{goalPct.toFixed(0)}%</text>
+                <div className="flex items-center gap-[22px] flex-wrap">
+                  <div className="relative w-[128px] h-[76px] shrink-0">
+                    <svg width="128" height="76" viewBox="0 0 128 76" aria-hidden="true">
+                      <path d="M12,68 A52,52 0 0 1 116,68" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" strokeLinecap="round" />
+                      {goalPct > 0 && (
+                        <path d="M12,68 A52,52 0 0 1 116,68" fill="none" stroke={goalPct >= 100 ? "#4ade80" : "#6f86ff"} strokeWidth="10" strokeLinecap="round"
+                          pathLength={100} strokeDasharray={`${Math.min(goalPct, 100)} 100`} style={{ filter: "drop-shadow(0 0 6px rgba(79,107,255,0.7))" }} />
+                      )}
                     </svg>
+                    <div className="absolute inset-x-0 bottom-0.5 text-center text-[17px] font-extrabold" style={{ color: goalPct >= 100 ? "#4ade80" : "#a5b4ff" }}>{goalPct.toFixed(0)}%</div>
                   </div>
-                  <div className="flex-1">
-                    <p className={cn("text-sm font-bold", monthPnl >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>{fmtK(monthPnl)}</p>
-                    <p className="text-[10px] text-muted-foreground">of {formatCurrency(monthlyGoal, cur, false)}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">{goalPct >= 100 ? "🎉 Achieved!" : `${fmtK(monthlyGoal - monthPnl).replace("+","")} left`}</p>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className={cn("text-2xl font-extrabold tracking-[-0.02em]", pnlColor(monthPnl))}>{fmtK(monthPnl)}</div>
+                    <span className={CAP}>of {formatCurrency(monthlyGoal, cur, false)}</span>
+                    <span className={cn(CHIP, CHIP_B, "self-start mt-1 !h-5 !text-[10.5px]")}>{goalPct >= 100 ? "🎉 Achieved!" : `${fmtK(monthlyGoal - monthPnl).replace("+","")} left`}</span>
                   </div>
                 </div>
               ) : (
-                <div className="h-16 flex items-center justify-center text-xs text-muted-foreground">Set a monthly profit goal</div>
+                <div className="h-16 flex items-center justify-center text-sm text-muted-foreground">Set a monthly profit goal</div>
               )}
             </div>
+
             {/* By Session | Performance by Day */}
-            <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover md:col-span-2 xl:col-span-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-0 sm:divide-x sm:divide-[#27358a]/30">
-                <div className="sm:pr-4">
-                  <p className="text-xs font-semibold mb-3">By Session</p>
-                  <div className="space-y-2.5">
-                    {bySession.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
-                    {bySession.slice(0, 4).map((s: any) => (
-                      <div key={s.session} className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground w-14 truncate capitalize">{sessionLabel[s.session] ?? s.session}</span>
-                        <div className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-[#4f6bff] to-[#8aa0ff]" style={{ width: `${s.winRate}%` }} />
+            <div className={cn(PANEL, "flex-[2.6_1_620px] min-w-0 px-6 py-[22px] flex flex-wrap gap-6 card-hover")}>
+              <div className="flex-[1_1_260px] min-w-0 flex flex-col gap-3.5">
+                <div className="flex items-baseline justify-between">
+                  <h2 className={H2}>By Session</h2>
+                  <span className={CAP}>win rate</span>
+                </div>
+                <div className="flex flex-col gap-[15px]">
+                  {bySession.length === 0 && <p className="text-sm text-muted-foreground">No data</p>}
+                  {bySession.slice(0, 4).map((s: any) => (
+                    <div key={s.session} className="flex items-center gap-3.5 text-[13px]">
+                      <span className="w-[72px] shrink-0 font-semibold truncate capitalize">{sessionLabel[s.session] ?? s.session}</span>
+                      <div className="flex-1 min-w-0 h-2 rounded-full bg-secondary dark:bg-white/[0.07]">
+                        <div className="h-2 rounded-full bg-gradient-to-r from-[#4f6bff] to-[#8ea2ff]" style={{ width: `${Math.max(0, Math.min(100, s.winRate))}%` }} />
+                      </div>
+                      <b className="font-mono tabular-nums w-10 shrink-0 text-right">{s.winRate}%</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-[1.3_1_300px] min-w-0 flex flex-col gap-3.5 md:border-l md:pl-6 dark:border-[#7a8cff]/[0.14]">
+                <div className="flex items-baseline justify-between">
+                  <h2 className={H2}>Performance by Day</h2>
+                  <span className={CAP}>total P&amp;L</span>
+                </div>
+                {dowRows.length === 0 ? <p className="text-sm text-muted-foreground">No data</p> : (
+                  <div className="flex flex-col gap-[15px]">
+                    {dowRows.map(r => (
+                      <div key={r.dow} className="flex items-center gap-3 text-[13px]">
+                        <span className="w-[34px] shrink-0 font-semibold">{r.label}</span>
+                        <div className="flex-1 min-w-0 relative h-2 rounded-full bg-secondary dark:bg-white/[0.07]">
+                          <div className="absolute left-1/2 -top-[3px] -bottom-[3px] w-px bg-[#a5b4ff]/40" />
+                          <div className={cn("absolute top-0 bottom-0", r.pnl >= 0 ? "left-1/2 rounded-r-full bg-gradient-to-r from-[#16a34a] to-[#4ade80]" : "right-1/2 rounded-l-full bg-gradient-to-l from-[#b91c1c] to-[#f87171]")}
+                            style={{ width: `${(Math.abs(r.pnl) / dowMax) * 50}%` }} />
                         </div>
-                        <span className="text-[10px] font-medium w-8 text-right">{s.winRate}%</span>
+                        <b className={cn("font-mono tabular-nums text-[12.5px] tracking-[-0.03em] text-right shrink-0 min-w-[72px] sm:w-24", pnlColor(r.pnl))}>{fmtNum(r.pnl)}</b>
                       </div>
                     ))}
                   </div>
-                </div>
-                <div className="sm:pl-4">
-                  <p className="text-xs font-semibold mb-3">Performance by Day</p>
-                  {dowRows.length === 0 ? <p className="text-xs text-muted-foreground">No data</p> : (
-                    <div className="space-y-2">
-                      {dowRows.map(r => (
-                        <div key={r.dow} className="flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground w-7">{r.label}</span>
-                          <div className="flex-1 relative h-2 bg-muted/40 rounded-full">
-                            <div className="absolute inset-y-0 left-1/2 w-px bg-border" />
-                            <div className={cn("absolute inset-y-0 rounded-full", r.pnl >= 0 ? "left-1/2 bg-[#4ade80]" : "right-1/2 bg-[#f87171]")}
-                              style={{ width: `${(Math.abs(r.pnl) / dowMax) * 50}%` }} />
-                          </div>
-                          <span className={cn("text-[10px] font-mono tabular-nums w-16 text-right", r.pnl >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>{fmtK(r.pnl)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* ── ROW 5: CALENDAR + RECENT TRADES ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 stagger">
-            <div className="lg:col-span-3">
+          <div className="flex flex-wrap gap-4 items-stretch stagger">
+            <div className="flex-[3_1_720px] min-w-0 flex flex-col [&>div]:flex-1">
               <CalendarHeatmap calendarData={calendar} currency={data?.account?.currency} />
             </div>
-            <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 flex flex-col card-hover">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold">Recent Trades</p>
-                <Link href="/trades" className="text-[10px] text-indigo-400 hover:underline">View all →</Link>
+            <div className={cn(PANEL, "flex-[1_1_320px] min-w-0 px-6 py-[22px] flex flex-col card-hover")}>
+              <div className="flex items-center justify-between mb-1.5">
+                <h2 className={H2}>Recent Trades</h2>
+                <Link href="/trades" className="text-xs font-bold text-indigo-600 dark:text-[#8ea2ff] hover:underline">View all →</Link>
               </div>
-              <div className="space-y-0 flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto">
                 {recentTrades.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No trades yet</p>
+                  <p className="text-sm text-muted-foreground py-4 text-center">No trades yet</p>
                 ) : recentTrades.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between py-2 border-b last:border-0 row-hover">
-                    <div>
-                      <p className="text-[11px] font-semibold">{t.symbol}</p>
-                      <p className="text-[9px] text-muted-foreground">{format(new Date(t.entryDate), "dd MMM")}</p>
+                  <div key={t.id} className="flex items-center justify-between gap-3 py-[13px] border-b dark:border-[#7a8cff]/[0.09] last:border-0 row-hover">
+                    <div className="min-w-0">
+                      <b className="text-[13.5px]">{t.symbol}</b>
+                      <div className={cn(CAP, "mt-0.5")}>{format(new Date(t.entryDate), "dd MMM")}</div>
                     </div>
                     {t.pnl !== null ? (
-                      <span className={cn("text-[11px] font-bold px-1.5 py-0.5 rounded-md",
-                        t.pnl > 0 ? "bg-[#16a34a]/20 text-[#4ade80]" : t.pnl < 0 ? "bg-[#dc2626]/20 text-[#f87171]" : "bg-muted text-muted-foreground")}>
+                      <span className={cn("inline-block px-2.5 py-[5px] rounded-lg font-semibold text-[12.5px] font-mono tabular-nums",
+                        t.pnl > 0 ? "bg-[#16a34a]/20 text-emerald-600 dark:text-[#4ade80]" : t.pnl < 0 ? "bg-[#dc2626]/20 text-red-600 dark:text-[#f87171]" : "bg-muted text-muted-foreground")}>
                         {fmtK(t.pnl)}
                       </span>
-                    ) : <span className="text-[10px] text-muted-foreground">open</span>}
+                    ) : <span className="text-xs text-muted-foreground">open</span>}
                   </div>
                 ))}
               </div>
@@ -701,38 +742,38 @@ export default function DashboardPage() {
           </div>
 
           {/* ── ROW 6: DEPOSIT & WITHDRAW ── */}
-          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover anim-up" style={{ animationDelay: ".3s" }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold">Deposit & Withdraw</p>
-              <button onClick={() => setShowTxModal(true)} className="text-[10px] px-2.5 py-1 bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white rounded-lg hover:brightness-110">+ Add</button>
+          <div className={cn(PANEL, "px-4 md:px-6 py-[22px] card-hover anim-up")} style={{ animationDelay: ".3s" }}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className={H2}>Deposit &amp; Withdraw</h2>
+              <button onClick={() => setShowTxModal(true)} className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-xs font-semibold", BTN_PRIMARY)}>
+                <Plus className="w-3.5 h-3.5" />Add
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="rounded-xl p-3 bg-[#16a34a]/10 border border-[#16a34a]/20">
-                <p className="text-[10px] text-muted-foreground mb-1">Total Deposit</p>
-                <p className="text-sm font-bold text-[#4ade80]">{formatCurrency(data?.account?.totalDeposit ?? 0, cur, false)}</p>
+            <div className="flex flex-wrap gap-3.5">
+              <div className="flex-[1_1_320px] min-w-0 rounded-[14px] border border-emerald-500/30 bg-emerald-500/[0.06] dark:bg-gradient-to-br dark:from-[#166534]/30 dark:to-[#0a1028]/60 px-5 py-4">
+                <div className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Total Deposit</div>
+                <div className={cn("text-[22px] font-extrabold tracking-[-0.02em] mt-1.5 break-words", WIN)}>{formatCurrency(data?.account?.totalDeposit ?? 0, cur, false)}</div>
               </div>
-              <div className="rounded-xl p-3 bg-[#dc2626]/10 border border-[#dc2626]/20">
-                <p className="text-[10px] text-muted-foreground mb-1">Total Withdraw</p>
-                <p className="text-sm font-bold text-[#f87171]">{formatCurrency(data?.account?.totalWithdraw ?? 0, cur, false)}</p>
+              <div className="flex-[1_1_320px] min-w-0 rounded-[14px] border border-red-500/30 bg-red-500/[0.06] dark:bg-gradient-to-br dark:from-[#7f1d1d]/30 dark:to-[#0a1028]/60 px-5 py-4">
+                <div className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Total Withdraw</div>
+                <div className={cn("text-[22px] font-extrabold tracking-[-0.02em] mt-1.5 break-words", LOSS)}>{formatCurrency(data?.account?.totalWithdraw ?? 0, cur, false)}</div>
               </div>
             </div>
             {txList.length > 0 && (
-              <div className="space-y-1 max-h-32 overflow-y-auto">
+              <div className="mt-2 max-h-[300px] overflow-y-auto">
                 {txList.slice(0, 5).map((tx: any) => (
-                  <div key={tx.id} className="flex items-center justify-between py-1.5 border-b last:border-0">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded font-medium", tx.type === "deposit" ? "bg-[#16a34a]/20 text-[#4ade80]" : "bg-[#dc2626]/20 text-[#f87171]")}>
-                        {tx.type === "deposit" ? "DEP" : "WDR"}
-                      </span>
-                      <div>
-                        <p className="text-[10px] font-medium">{formatCurrency(tx.amount, cur, false)}</p>
-                        {tx.note && <p className="text-[9px] text-muted-foreground">{tx.note}</p>}
-                      </div>
+                  <div key={tx.id} className="flex items-center gap-3.5 py-[13px] border-b dark:border-[#7a8cff]/[0.09] last:border-0">
+                    <span className={cn(CHIP, "!min-w-0 w-12 !h-auto !rounded-[7px] py-[3px] shrink-0", tx.type === "deposit" ? CHIP_G : CHIP_R)}>
+                      {tx.type === "deposit" ? "DEP" : "WDR"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <b className="font-mono tabular-nums text-sm">{formatCurrency(tx.amount, cur, false)}</b>
+                      {tx.note && <div className={cn(CAP, "mt-0.5 truncate")}>{tx.note}</div>}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[9px] text-muted-foreground">{new Date(tx.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}</p>
-                      <button onClick={() => deleteTx(tx.id)} className="text-muted-foreground hover:text-[#f87171] text-[10px]">✕</button>
-                    </div>
+                    <span className={cn(CAP, "shrink-0")}>{new Date(tx.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}</span>
+                    <button onClick={() => deleteTx(tx.id)} aria-label="Hapus" className="w-[30px] h-[30px] shrink-0 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground dark:hover:bg-white/[0.08] dark:hover:text-white transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>

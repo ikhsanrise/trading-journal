@@ -9,6 +9,7 @@ import { cn, formatCurrency, formatR, formatDate, getDurationString } from "@/li
 import TradeFormModal from "@/components/trades/TradeFormModal";
 import ImportModal from "@/components/trades/ImportModal";
 import AccountSwitcher from "@/components/layout/AccountSwitcher";
+import { PANEL, BTN_PRIMARY, PAGE, H1, SUB, BTN, CAP, WIN, LOSS } from "@/lib/theme";
 
 const OUTCOME_FILTERS = [
   { label: "All", value: "" },
@@ -21,15 +22,15 @@ const SETUP_CATS = ["A", "A+", "A++", "B"];
 const MOODS = ["😖", "😕", "😐", "🙂", "😎"];
 const PAGE_SIZES = [10, 25, 50, 100];
 
-/* ── tema navy ── */
-const PANEL =
-  "rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70";
-const BTN_PRIMARY =
-  "bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] text-white shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] hover:brightness-110";
+/* ── tema navy (shared constants in @/lib/theme) ── */
 const PILL_ON =
-  "bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] text-white border-transparent shadow-[0_0_18px_-4px_rgba(79,107,255,0.75)]";
+  "bg-gradient-to-b from-[#5873ff] to-[#2f4bd8] text-white border-transparent shadow-[0_0_18px_-4px_rgba(79,107,255,0.75)]";
 const PILL_OFF =
-  "text-muted-foreground border-white/10 hover:text-foreground hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10";
+  "text-muted-foreground dark:text-[#9aa4d2] border-border dark:border-white/10 hover:text-foreground dark:hover:text-[#e8ecff] hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10";
+const FP = "h-9 px-[15px] rounded-full border text-xs font-semibold transition-all";
+const BTN_O = "border border-border dark:border-white/[0.14] bg-transparent dark:bg-white/[0.02] text-foreground/80 dark:text-[#dfe4ff] hover:border-[#4f6bff]/60 hover:bg-[#4f6bff]/10 transition-colors";
+const TH = "px-4 py-[13px] text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground dark:text-[#7d88bd] whitespace-nowrap";
+const SEC = "text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground dark:text-[#7d88bd] mb-2";
 
 /* ── date range ── */
 type DateRangeValue = { key: string; from: string; to: string };
@@ -79,11 +80,11 @@ function DateRange({ value, onChange }: { value: DateRangeValue; onChange: (r: D
     <div className="relative">
       <button
         onClick={() => { setCf(value.from); setCt(value.to); setOpen(!open); }}
-        className="flex items-center gap-2.5 text-xs px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10 transition-colors"
+        className={cn(BTN, BTN_O)}
       >
         <CalendarDays className="w-4 h-4 text-[#8ea2ff]" />
-        <span className="font-medium">{label}</span>
-        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
+        <span>{label}</span>
+        <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
       {open && (
         <>
@@ -141,8 +142,8 @@ function Backdrop() {
         style={{ background: "radial-gradient(closest-side, rgba(59,91,255,0.28), transparent)" }} />
       <div className="absolute -top-16 -right-10 w-[520px] h-[300px] rounded-full blur-3xl opacity-50"
         style={{ background: "radial-gradient(closest-side, rgba(99,102,241,0.22), transparent)" }} />
-      <svg viewBox="0 0 360 120" preserveAspectRatio="none" className="absolute right-0 top-8 w-[52%] h-[200px]"
-        style={{ opacity: 0.5, WebkitMaskImage: "linear-gradient(to left, black 25%, transparent)", maskImage: "linear-gradient(to left, black 25%, transparent)" }}>
+      <svg viewBox="0 0 360 120" preserveAspectRatio="none" className="absolute right-0 top-24 w-[45%] h-[170px]"
+        style={{ opacity: 0.2, WebkitMaskImage: "linear-gradient(to left, black 25%, transparent)", maskImage: "linear-gradient(to left, black 25%, transparent)" }}>
         {CANDLES.map(([o, c, h, l], i) => {
           const x = 10 + i * 19;
           const up = c >= o;
@@ -183,7 +184,7 @@ function useCountUp(target: number, ms = 700) {
 
 function IconTile({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-[#3b5bff]/30 bg-gradient-to-br from-[#2b3f9e]/50 to-[#13204f]/60 text-[#8ea2ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+    <div className="w-[46px] h-[46px] rounded-[13px] flex items-center justify-center shrink-0 border border-[#5b74ff]/30 bg-gradient-to-br from-[#2b3f9e]/50 to-[#13204f]/60 text-[#8ea2ff] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
       {children}
     </div>
   );
@@ -197,7 +198,7 @@ function WinRing({ pct }: { pct: number }) {
   }, []);
   const f = Math.max(0, Math.min(1, pct / 100));
   return (
-    <svg viewBox="0 0 64 64" className="w-12 h-12 shrink-0 -rotate-90" style={{ filter: "drop-shadow(0 0 6px rgba(79,107,255,0.55))" }}>
+    <svg viewBox="0 0 64 64" className="w-[46px] h-[46px] shrink-0 -rotate-90" style={{ filter: "drop-shadow(0 0 6px rgba(79,107,255,0.55))" }}>
       <defs>
         <linearGradient id="wrGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#8ea2ff" />
@@ -214,7 +215,7 @@ function WinRing({ pct }: { pct: number }) {
 function SideBadge({ direction }: { direction: string }) {
   const long = direction === "long";
   return (
-    <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold",
+    <span className={cn("inline-flex items-center rounded-[7px] border px-[9px] py-[3px] text-[11px] font-bold",
       long ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30"
            : "bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/30")}>
       {long ? "Long" : "Short"}
@@ -230,16 +231,17 @@ function StatusBadge({ outcome }: { outcome: string | null }) {
   };
   const c = outcome ? cfg[outcome] : undefined;
   if (!c) {
-    return <span className="inline-flex items-center rounded-md border border-white/10 bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Open</span>;
+    return <span className="inline-flex items-center rounded-[7px] border border-border dark:border-white/10 bg-muted px-[9px] py-[3px] text-[11px] font-bold text-muted-foreground">Open</span>;
   }
-  return <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold", c.cls)}>{c.label}</span>;
+  return <span className={cn("inline-flex items-center rounded-[7px] border px-[9px] py-[3px] text-[11px] font-bold", c.cls)}>{c.label}</span>;
 }
 
 function PnLPill({ value, currency }: { value: number | null; currency: string }) {
-  if (value === null) return <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">Open</span>;
-  if (value > 0) return <span className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-[#16a34a]/20 text-[#4ade80] tabular-nums">{formatCurrency(value, currency)}</span>;
-  if (value < 0) return <span className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-[#dc2626]/20 text-[#f87171] tabular-nums">{formatCurrency(value, currency)}</span>;
-  return <span className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-muted text-muted-foreground tabular-nums">{formatCurrency(0, currency)}</span>;
+  const base = "inline-block px-2.5 py-[5px] rounded-lg font-semibold text-[12.5px] font-mono tabular-nums";
+  if (value === null) return <span className="inline-block px-2.5 py-[5px] rounded-lg text-[11px] bg-muted text-muted-foreground font-semibold">Open</span>;
+  if (value > 0) return <span className={cn(base, "bg-[#16a34a]/20", WIN)}>{formatCurrency(value, currency)}</span>;
+  if (value < 0) return <span className={cn(base, "bg-[#dc2626]/20", LOSS)}>{formatCurrency(value, currency)}</span>;
+  return <span className={cn(base, "bg-muted text-muted-foreground")}>{formatCurrency(0, currency)}</span>;
 }
 
 function SetupCatBadge({ cat }: { cat: string | null }) {
@@ -250,7 +252,7 @@ function SetupCatBadge({ cat }: { cat: string | null }) {
     "A": "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
     "B": "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-600",
   };
-  return <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border", colors[cat] ?? "")}>{cat}</span>;
+  return <span className={cn("text-[11px] font-bold px-2 py-[3px] rounded-md border", colors[cat] ?? "")}>{cat}</span>;
 }
 
 function pageList(cur: number, total: number): (number | "…")[] {
@@ -453,31 +455,31 @@ export default function TradesPage() {
   const menuTrade = menu ? trades.find((x: any) => x.id === menu.id) : null;
 
   return (
-    <div className="relative isolate flex flex-col gap-4 p-4 md:p-6">
+    <div className={cn(PAGE, "relative isolate gap-5")}>
       <Backdrop />
 
       {/* ── Header ── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Trade Log</h1>
+            <h1 className={H1}>Trade Log</h1>
             <AccountSwitcher value={accountId} onChange={(id) => { setAccountId(id); setPage(1); }} />
           </div>
-          <p className="text-xs md:text-sm text-muted-foreground mt-1.5">
+          <p className={SUB}>
             Riwayat seluruh transaksi trading Anda secara detail dan terstruktur
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button onClick={() => setShowDeleteAll(true)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-2.5 rounded-xl border border-red-500/50 text-red-500 hover:bg-red-500/10 transition-colors">
-            <Trash2 className="w-3.5 h-3.5" /> Delete All
+            className={cn(BTN, "border border-red-500/50 text-red-500 dark:text-[#f87171] hover:bg-red-500/10 transition-colors")}>
+            <Trash2 className="w-4 h-4" /> Delete All
           </button>
           <button onClick={() => setShowImport(true)}
-            className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-2.5 rounded-xl border border-white/15 text-foreground/80 hover:text-foreground hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10 transition-colors">
-            <Upload className="w-3.5 h-3.5" /> Import CSV
+            className={cn(BTN, BTN_O)}>
+            <Upload className="w-4 h-4" /> Import CSV
           </button>
           <button onClick={() => { setEditTrade(null); setShowForm(true); }}
-            className={cn("flex items-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all", BTN_PRIMARY)}>
+            className={cn(BTN, "transition-all", BTN_PRIMARY)}>
             <Plus className="w-4 h-4" /> Add Trade
           </button>
         </div>
@@ -486,30 +488,30 @@ export default function TradesPage() {
       {/* ── Filter ── */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative shrink-0">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="w-4 h-4 absolute left-[13px] top-1/2 -translate-y-1/2 text-muted-foreground dark:text-[#8a94c4]" />
           <input value={searchInput} onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
             placeholder="Cari simbol..."
-            className="text-xs pl-8 pr-3 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] focus:outline-none focus:border-[#4f6bff]/60 focus:ring-4 focus:ring-[#4f6bff]/15 w-36 transition-all" />
+            className="h-10 w-[170px] text-[13px] font-medium pl-[38px] pr-3.5 rounded-xl border border-border dark:border-white/10 bg-transparent dark:bg-white/[0.04] focus:outline-none focus:border-[#4f6bff]/60 focus:ring-4 focus:ring-[#4f6bff]/15 transition-all" />
         </div>
-        <div className="hidden md:block w-px h-5 bg-white/10 mx-0.5" />
+        <div className="hidden md:block w-px h-5 bg-border dark:bg-white/10 mx-1" />
         {OUTCOME_FILTERS.map((f) => (
           <button key={f.value} onClick={() => resetPage(setOutcome, f.value)}
-            className={cn("text-xs px-3.5 py-2 rounded-full border transition-all font-medium", outcome === f.value ? PILL_ON : PILL_OFF)}>
+            className={cn(FP, outcome === f.value ? PILL_ON : PILL_OFF)}>
             {f.label}
           </button>
         ))}
-        <div className="hidden md:block w-px h-5 bg-white/10 mx-0.5" />
+        <div className="hidden md:block w-px h-5 bg-border dark:bg-white/10 mx-1" />
         {DIR_FILTERS.map((f) => (
           <button key={f.value} onClick={() => resetPage(setDirection, direction === f.value ? "" : f.value)}
-            className={cn("text-xs px-3.5 py-2 rounded-full border transition-all font-medium", direction === f.value ? PILL_ON : PILL_OFF)}>
+            className={cn(FP, direction === f.value ? PILL_ON : PILL_OFF)}>
             {f.label}
           </button>
         ))}
-        <div className="hidden md:block w-px h-5 bg-white/10 mx-0.5" />
-        <span className="text-xs text-muted-foreground">Setup:</span>
+        <div className="hidden md:block w-px h-5 bg-border dark:bg-white/10 mx-1" />
+        <span className={cn(CAP, "mr-0.5")}>Setup:</span>
         {SETUP_CATS.map((cat) => (
           <button key={cat} onClick={() => resetPage(setSetupCat, setupCat === cat ? "" : cat)}
-            className={cn("text-xs px-3.5 py-2 rounded-full border transition-all font-semibold", setupCat === cat ? PILL_ON : PILL_OFF)}>
+            className={cn(FP, setupCat === cat ? PILL_ON : PILL_OFF)}>
             {cat}
           </button>
         ))}
@@ -520,46 +522,46 @@ export default function TradesPage() {
 
       {/* ── Kartu statistik ── */}
       {!loaded ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[96px] rounded-2xl" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[104px] rounded-[18px]" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 stagger">
-          <div className={cn(PANEL, "card-hover p-4 flex items-center gap-4")}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 stagger">
+          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <IconTile><BarChart3 className="w-5 h-5" /></IconTile>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Total Trades</p>
-              <p className="text-2xl font-bold tracking-tight tabular-nums">{Math.round(cTotal)} <span className="text-base font-semibold text-muted-foreground">trades</span></p>
+              <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Total Trades</p>
+              <p className="mt-1 text-[30px] font-extrabold tracking-[-0.02em] leading-[1.1] tabular-nums">{Math.round(cTotal)} <span className="text-[15px] font-semibold text-muted-foreground dark:text-[#8a94c4]">trades</span></p>
               {filtersActive && sm.accountTotal !== sm.total && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">dari {sm.accountTotal} di akun</p>
+                <p className="text-[11px] text-muted-foreground dark:text-[#8a94c4] mt-0.5">dari {sm.accountTotal} di akun</p>
               )}
             </div>
           </div>
 
-          <div className={cn(PANEL, "card-hover p-4 flex items-center gap-4")}>
+          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <IconTile><TrendingUp className="w-5 h-5" /></IconTile>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Net P&L</p>
-              <p className={cn("text-2xl font-bold tracking-tight tabular-nums truncate", (sm.netPnL ?? 0) >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>
+              <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Net P&L</p>
+              <p className={cn("mt-1 text-[30px] font-extrabold tracking-[-0.02em] leading-[1.1] tabular-nums truncate", (sm.netPnL ?? 0) >= 0 ? WIN : LOSS)}>
                 {formatCurrency(cNet, cur)}
               </p>
             </div>
           </div>
 
-          <div className={cn(PANEL, "card-hover p-4 flex items-center gap-4")}>
+          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <WinRing pct={sm.winRate ?? 0} />
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Win Rate</p>
-              <p className="text-2xl font-bold tracking-tight tabular-nums">{cWin.toFixed(1)}%</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{sm.wins ?? 0}W · {sm.losses ?? 0}L{(sm.be ?? 0) > 0 ? ` · ${sm.be}BE` : ""}</p>
+              <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Win Rate</p>
+              <p className="mt-1 text-[30px] font-extrabold tracking-[-0.02em] leading-[1.1] tabular-nums">{cWin.toFixed(1)}%</p>
+              <p className="text-[11px] text-muted-foreground dark:text-[#8a94c4] mt-0.5">{sm.wins ?? 0}W · {sm.losses ?? 0}L{(sm.be ?? 0) > 0 ? ` · ${sm.be}BE` : ""}</p>
             </div>
           </div>
 
-          <div className={cn(PANEL, "card-hover p-4 flex items-center gap-4")}>
+          <div className={cn(PANEL, "card-hover min-h-[104px] px-[22px] py-5 flex items-center gap-4 rounded-[18px]")}>
             <IconTile><Trophy className="w-5 h-5" /></IconTile>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Profit Factor</p>
-              <p className={cn("text-2xl font-bold tracking-tight tabular-nums", (sm.profitFactor ?? 0) >= 1 ? "text-[#4ade80]" : "text-[#f87171]")}>
+              <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Profit Factor</p>
+              <p className={cn("mt-1 text-[30px] font-extrabold tracking-[-0.02em] leading-[1.1] tabular-nums", (sm.profitFactor ?? 0) >= 1 ? WIN : LOSS)}>
                 {(sm.profitFactor ?? 0) >= 999 ? "∞" : cPF.toFixed(2)}
               </p>
             </div>
@@ -570,22 +572,22 @@ export default function TradesPage() {
       {/* ── Tabel ── */}
       <div className={cn(PANEL, "overflow-hidden")}>
         <div className={cn("overflow-x-auto transition-opacity duration-200", loading && loaded && "opacity-60")}>
-          <table className="w-full min-w-[980px] text-[13px]">
+          <table className="w-full min-w-[1080px] text-[13px]">
             <thead>
-              <tr className="border-b border-white/10 bg-[#0f1a45]/30 dark:bg-[#0f1a45]/40">
-                <th className="text-left px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Date</th>
-                <th className="text-left px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Symbol</th>
-                <th className="text-left px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Side</th>
-                <th className="text-right px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Entry</th>
-                <th className="text-right px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Exit</th>
-                <th className="text-right px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Lot</th>
-                <th className="text-left px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Hold</th>
-                <th className="text-right px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">R</th>
-                <th className="text-right px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">P&L</th>
-                <th className="text-left px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Setup</th>
-                <th className="text-left px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cat.</th>
-                <th className="text-left px-3 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="w-12 px-2 py-3.5"></th>
+              <tr className="border-b border-border dark:border-[#7a8cff]/[0.14] bg-muted/40 dark:bg-[#0f1a45]/40">
+                <th className={cn(TH, "text-left")}>Date</th>
+                <th className={cn(TH, "text-left")}>Symbol</th>
+                <th className={cn(TH, "text-left")}>Side</th>
+                <th className={cn(TH, "text-right")}>Entry</th>
+                <th className={cn(TH, "text-right")}>Exit</th>
+                <th className={cn(TH, "text-right")}>Lot</th>
+                <th className={cn(TH, "text-left")}>Hold</th>
+                <th className={cn(TH, "text-right")}>R</th>
+                <th className={cn(TH, "text-right")}>P&L</th>
+                <th className={cn(TH, "text-left")}>Setup</th>
+                <th className={cn(TH, "text-left")}>Cat.</th>
+                <th className={cn(TH, "text-left")}>Status</th>
+                <th className="w-12 px-2 py-[13px]"></th>
               </tr>
             </thead>
             <tbody>
@@ -616,82 +618,83 @@ export default function TradesPage() {
                 return (
                   <Fragment key={t.id}>
                     <tr
-                      className="group border-b border-white/5 hover:bg-[#2a3a9f]/10 cursor-pointer transition-colors"
+                      className={cn("group border-b border-border/60 dark:border-[#7a8cff]/[0.07] hover:bg-[#2a3a9f]/[0.16] cursor-pointer transition-colors",
+                        isExpanded && "bg-[#2a3a9f]/[0.12] shadow-[inset_2px_0_0_0_#4f6bff]")}
                       onClick={() => setExpandedRow(isExpanded ? null : t.id)}
                     >
-                      <td className="px-4 py-3.5 whitespace-nowrap transition-shadow group-hover:shadow-[inset_2px_0_0_0_#4f6bff]">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <ChevronRight className={cn("w-3.5 h-3.5 transition-all", isExpanded ? "rotate-90 opacity-100 text-[#8ea2ff]" : "opacity-0 group-hover:opacity-70")} />
+                      <td className="px-4 py-[15px] h-[52px] whitespace-nowrap transition-shadow group-hover:shadow-[inset_2px_0_0_0_#4f6bff]">
+                        <div className={cn("flex items-center gap-2", isExpanded ? "text-foreground dark:text-[#dfe4ff]" : "text-muted-foreground dark:text-[#aab3df]")}>
+                          <ChevronRight className={cn("w-3.5 h-3.5 shrink-0 transition-all", isExpanded ? "rotate-90 opacity-100 text-[#8ea2ff]" : "opacity-0 group-hover:opacity-70")} />
                           {formatDate(t.entryDate)}
                         </div>
                       </td>
-                      <td className="px-3 py-3.5 font-semibold">{t.symbol}</td>
-                      <td className="px-3 py-3.5"><SideBadge direction={t.direction} /></td>
-                      <td className="px-3 py-3.5 text-right tabular-nums">{t.entryPrice}</td>
-                      <td className="px-3 py-3.5 text-right tabular-nums">{t.exitPrice ?? "—"}</td>
-                      <td className="px-3 py-3.5 text-right tabular-nums">{t.lotSize}</td>
-                      <td className="px-3 py-3.5 text-muted-foreground whitespace-nowrap">{duration}</td>
-                      <td className="px-3 py-3.5 text-right">
-                        <span className={cn("font-medium tabular-nums",
-                          (t.rMultiple ?? 0) > 0 ? "text-[#4ade80]" : (t.rMultiple ?? 0) < 0 ? "text-[#f87171]" : "text-muted-foreground")}>
+                      <td className="px-4 py-[15px] font-bold">{t.symbol}</td>
+                      <td className="px-4 py-[15px]"><SideBadge direction={t.direction} /></td>
+                      <td className="px-4 py-[15px] text-right font-mono tabular-nums">{t.entryPrice}</td>
+                      <td className="px-4 py-[15px] text-right font-mono tabular-nums">{t.exitPrice ?? "—"}</td>
+                      <td className="px-4 py-[15px] text-right font-mono tabular-nums">{t.lotSize}</td>
+                      <td className="px-4 py-[15px] text-muted-foreground dark:text-[#aab3df] whitespace-nowrap">{duration}</td>
+                      <td className="px-4 py-[15px] text-right">
+                        <span className={cn("font-mono font-medium tabular-nums",
+                          (t.rMultiple ?? 0) > 0 ? WIN : (t.rMultiple ?? 0) < 0 ? LOSS : "text-muted-foreground")}>
                           {formatR(t.rMultiple)}
                         </span>
                       </td>
-                      <td className="px-3 py-3.5 text-right whitespace-nowrap"><PnLPill value={t.pnl} currency={tc} /></td>
-                      <td className="px-3 py-3.5">
+                      <td className="px-4 py-[15px] text-right whitespace-nowrap"><PnLPill value={t.pnl} currency={tc} /></td>
+                      <td className="px-4 py-[15px]">
                         {t.setup
-                          ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">{t.setup.name}</span>
+                          ? <span className="text-[11px] font-semibold px-2 py-[3px] rounded-md bg-muted text-muted-foreground border">{t.setup.name}</span>
                           : <span className="text-muted-foreground">—</span>}
                       </td>
-                      <td className="px-3 py-3.5"><SetupCatBadge cat={t.setupCategory} /></td>
-                      <td className="px-3 py-3.5"><StatusBadge outcome={t.outcome} /></td>
-                      <td className="px-2 py-3.5">
+                      <td className="px-4 py-[15px]"><SetupCatBadge cat={t.setupCategory} /></td>
+                      <td className="px-4 py-[15px]"><StatusBadge outcome={t.outcome} /></td>
+                      <td className="px-2 py-[15px]">
                         <button onClick={(e) => openMenu(e, t.id)} aria-label="Aksi"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors">
+                          className="w-8 h-8 rounded-[9px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary dark:hover:bg-white/10 transition-colors">
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="border-b border-white/5 bg-[#0f1a45]/20">
-                        <td colSpan={13} className="px-5 py-4">
-                          <div className="flex gap-6 text-xs">
-                            <div className="flex-1">
-                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Notes & Analysis</p>
+                      <tr className="border-b border-border/60 dark:border-[#7a8cff]/[0.07] bg-muted/30 dark:bg-[#0f1a45]/35">
+                        <td colSpan={13} className="px-6 pt-5 pb-[22px] whitespace-normal">
+                          <div className="flex flex-wrap gap-7 text-xs">
+                            <div className="flex-1 basis-[320px] min-w-0">
+                              <p className={SEC}>Notes & Analysis</p>
                               {t.notes
-                                ? <p className="text-foreground leading-relaxed">{t.notes}</p>
+                                ? <p className="text-[13px] text-foreground/90 dark:text-[#cdd4f5] leading-[1.65]">{t.notes}</p>
                                 : <p className="text-muted-foreground italic">No notes for this trade.</p>}
                             </div>
                             {t.tags && t.tags.length > 0 && (
                               <div className="shrink-0">
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Tags</p>
+                                <p className={SEC}>Tags</p>
                                 <div className="flex gap-1 flex-wrap">
                                   {t.tags.map((tag: string) => (
-                                    <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">{tag}</span>
+                                    <span key={tag} className="text-[11px] font-bold px-[9px] py-[3px] rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">{tag}</span>
                                   ))}
                                 </div>
                               </div>
                             )}
                             {t.mood && (
                               <div className="shrink-0">
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Mood</p>
+                                <p className={SEC}>Mood</p>
                                 <span className="text-lg">{MOODS[t.mood - 1]}</span>
                               </div>
                             )}
                             {(t.screenshotBefore || t.screenshotAfter) && (
                               <div className="shrink-0">
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Screenshots</p>
+                                <p className={SEC}>Screenshots</p>
                                 <div className="flex gap-2">
                                   {t.screenshotBefore && (
                                     <div className="text-center">
                                       <img src={t.screenshotBefore} alt="Before" className="w-24 h-16 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(t.screenshotBefore, "_blank")} />
-                                      <p className="text-[10px] text-muted-foreground mt-0.5">Before</p>
+                                      <p className="text-[11px] text-muted-foreground dark:text-[#8a94c4] mt-0.5">Before</p>
                                     </div>
                                   )}
                                   {t.screenshotAfter && (
                                     <div className="text-center">
                                       <img src={t.screenshotAfter} alt="After" className="w-24 h-16 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(t.screenshotAfter, "_blank")} />
-                                      <p className="text-[10px] text-muted-foreground mt-0.5">After</p>
+                                      <p className="text-[11px] text-muted-foreground dark:text-[#8a94c4] mt-0.5">After</p>
                                     </div>
                                   )}
                                 </div>
@@ -709,40 +712,40 @@ export default function TradesPage() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-4 py-3">
-          <span className="text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border dark:border-[#7a8cff]/[0.14] px-5 py-3.5">
+          <span className={CAP}>
             {total === 0 ? "Menampilkan 0 transaksi" : `Menampilkan ${rangeFrom}–${rangeTo} dari ${total} transaksi`}
           </span>
 
           <div className="flex items-center gap-1.5">
             <button disabled={page === 1} onClick={() => setPage(page - 1)} aria-label="Sebelumnya"
-              className="w-9 h-9 rounded-lg border border-white/10 flex items-center justify-center disabled:opacity-30 hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10 transition-colors">
+              className="w-9 h-9 rounded-[10px] border border-border dark:border-white/10 flex items-center justify-center disabled:opacity-30 hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10 transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
             {pageList(page, totalPages).map((p, i) =>
               p === "…" ? (
-                <span key={`e${i}`} className="w-6 text-center text-xs text-muted-foreground">…</span>
+                <span key={`e${i}`} className={cn(CAP, "w-6 text-center")}>…</span>
               ) : (
                 <button key={p} onClick={() => setPage(p)}
-                  className={cn("w-9 h-9 rounded-lg border text-xs font-medium transition-all", page === p ? PILL_ON : PILL_OFF)}>
+                  className={cn("w-9 h-9 rounded-[10px] border text-xs font-semibold transition-all", page === p ? PILL_ON : PILL_OFF)}>
                   {p}
                 </button>
               )
             )}
             <button disabled={page === totalPages} onClick={() => setPage(page + 1)} aria-label="Berikutnya"
-              className="w-9 h-9 rounded-lg border border-white/10 flex items-center justify-center disabled:opacity-30 hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10 transition-colors">
+              className="w-9 h-9 rounded-[10px] border border-border dark:border-white/10 flex items-center justify-center disabled:opacity-30 hover:border-[#4f6bff]/50 hover:bg-[#4f6bff]/10 transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           <div className="flex items-center gap-2">
             <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="text-xs rounded-lg border border-white/10 bg-background px-2.5 py-2.5 focus:outline-none focus:border-[#4f6bff]/60">
+              className="h-10 text-xs font-semibold rounded-xl border border-border dark:border-white/10 bg-background px-3.5 text-foreground dark:text-[#c7d0ff] focus:outline-none focus:border-[#4f6bff]/60">
               {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} / halaman</option>)}
             </select>
             <button onClick={exportCsv} disabled={exporting || total === 0}
-              className="flex items-center gap-2 text-xs font-medium px-4 py-2.5 rounded-xl border border-[#4f6bff]/50 text-[#a5b4ff] hover:bg-[#4f6bff]/10 transition-colors disabled:opacity-40">
-              <Download className="w-3.5 h-3.5" /> {exporting ? "Menyiapkan..." : "Export Laporan"}
+              className={cn(BTN, "border border-[#4f6bff]/50 text-[#3b57e8] dark:text-[#a5b4ff] hover:bg-[#4f6bff]/10 transition-colors disabled:opacity-40")}>
+              <Download className="w-4 h-4" /> {exporting ? "Menyiapkan..." : "Export Laporan"}
             </button>
           </div>
         </div>

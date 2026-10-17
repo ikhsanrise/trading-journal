@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { PANEL, KPI, CHIP, CHIP_G, CHIP_R, CHIP_B } from "@/lib/theme";
 
 const GREEN = "#4ade80";
 const RED = "#f87171";
@@ -78,10 +79,10 @@ function Detail({ title, rows, note, align = "left" }: { title: string; rows: Ro
 
 function Card({ title, detail, children, className }: { title: string; detail?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("group relative hover:z-30 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover flex flex-col justify-between min-h-[128px]", className)}>
+    <div className={cn("group relative hover:z-30", PANEL, "px-[22px] pt-[18px] pb-5 card-hover flex flex-col gap-2.5 min-h-[148px] min-w-0", className)}>
       <div className="flex items-center gap-1.5">
-        <p className="text-xs text-muted-foreground">{title}</p>
-        <Info className="w-3 h-3 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
+        <p className="text-[12.5px] font-semibold text-muted-foreground dark:text-[#aab3df]">{title}</p>
+        <Info className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
       </div>
       {children}
       {detail}
@@ -89,9 +90,9 @@ function Card({ title, detail, children, className }: { title: string; detail?: 
   );
 }
 
-function Pill({ color, children }: { color: string; children: ReactNode }) {
+function Pill({ color, children, className }: { color: string; children: ReactNode; className?: string }) {
   return (
-    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: `${color}26`, color }}>
+    <span className={cn(CHIP, color === GREEN ? CHIP_G : color === RED ? CHIP_R : CHIP_B, className)}>
       {children}
     </span>
   );
@@ -151,16 +152,16 @@ function WinCard({ stats, cur }: { stats: any; cur: string }) {
         />
       }
     >
-      <div className="flex items-end justify-between gap-3 mt-2">
-        <p className="text-3xl font-bold tracking-tight">{stats ? `${shown.toFixed(2)}%` : "—"}</p>
+      <div className="flex items-end justify-between gap-3 mt-auto">
+        <p className={KPI}>{stats ? `${shown.toFixed(2)}%` : "—"}</p>
         <div className="flex flex-col items-center">
-          <svg viewBox="0 0 120 66" className="w-32 h-[70px]">
+          <svg viewBox="0 0 120 66" className="w-[112px] h-[62px]">
             <path d={arc(60, 60, 46, 0, 1)} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={9} />
             {paths.map((p, i) => (
               <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth={9} pathLength={1} className="gauge-seg" style={{ animationDelay: `${0.15 + i * 0.12}s` }} />
             ))}
           </svg>
-          <div className="flex gap-1.5 -mt-1">
+          <div className="flex gap-[5px] -mt-1">
             <Pill color={GREEN}>{win}</Pill>
             <Pill color={BLUE}>{be}</Pill>
             <Pill color={RED}>{loss}</Pill>
@@ -200,14 +201,14 @@ function AvgCard({ stats, cur }: { stats: any; cur: string }) {
         />
       }
     >
-      <div className="flex items-end justify-between gap-4 mt-2">
-        <p className="text-3xl font-bold tracking-tight">{has ? shown.toFixed(2) : "—"}</p>
-        <div className="flex-1 min-w-[96px] max-w-[190px] pb-1">
-          <div className="h-2 rounded-full overflow-hidden flex bar-grow">
-            <div style={{ width: `${greenPct}%`, background: GREEN }} />
-            <div style={{ width: `${100 - greenPct}%`, background: RED }} />
+      <div className="flex items-end justify-between gap-4 mt-auto">
+        <p className={KPI}>{has ? shown.toFixed(2) : "—"}</p>
+        <div className="flex-1 min-w-[96px] max-w-[190px] pb-0.5">
+          <div className="h-2 rounded-full overflow-hidden flex gap-[3px] bar-grow">
+            <div className="rounded-full" style={{ width: `${greenPct}%`, background: "linear-gradient(90deg,#22c55e,#4ade80)" }} />
+            <div className="rounded-full" style={{ width: `${100 - greenPct}%`, background: "linear-gradient(90deg,#dc2626,#f87171)" }} />
           </div>
-          <div className="flex justify-between mt-1.5 text-[10px] font-semibold">
+          <div className="flex justify-between mt-[7px] text-[11px] font-bold font-mono">
             <span style={{ color: GREEN }}>{compact(avgWin, cur)}</span>
             <span style={{ color: RED }}>{compact(avgLoss, cur)}</span>
           </div>
@@ -245,9 +246,9 @@ function PFCard({ stats, cur }: { stats: any; cur: string }) {
         />
       }
     >
-      <div className="flex items-end justify-between gap-3 mt-2">
-        <p className="text-3xl font-bold tracking-tight">{!has ? "—" : inf ? "∞" : shown.toFixed(2)}</p>
-        <svg viewBox="0 0 72 72" className="w-[72px] h-[72px] ring-in">
+      <div className="flex items-end justify-between gap-3 mt-auto">
+        <p className={KPI}>{!has ? "—" : inf ? "∞" : shown.toFixed(2)}</p>
+        <svg viewBox="0 0 72 72" className="w-[62px] h-[62px] ring-in">
           <circle cx={36} cy={36} r={28} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={8} />
           {gf > 0 && (
             <circle cx={36} cy={36} r={28} fill="none" stroke={GREEN} strokeWidth={8} pathLength={1}
@@ -280,14 +281,14 @@ function StreakCol({ heading, cur, type, maxWin, maxLoss, unit }: { heading: str
   const color = type === "win" ? GREEN : type === "loss" ? RED : "rgba(255,255,255,0.25)";
   return (
     <div>
-      <p className="text-[10px] font-bold tracking-wider mb-1.5">{heading}</p>
-      <div className="flex items-center gap-2.5">
-        <div className="w-12 h-12 rounded-full border-[3px] flex items-center justify-center text-lg font-bold shrink-0" style={{ borderColor: color, color }}>
+      <p className="text-[10.5px] font-bold tracking-[0.08em] text-muted-foreground dark:text-[#8a94c4] mb-2">{heading}</p>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-[46px] h-[46px] rounded-full border-[3px] flex items-center justify-center text-lg font-extrabold text-foreground shrink-0" style={{ borderColor: color, boxShadow: type === "none" ? undefined : `0 0 14px -4px ${color}` }}>
           {cur}
         </div>
-        <div className="flex flex-col gap-1">
-          <Pill color={RED}>{plural(maxLoss, unit)}</Pill>
-          <Pill color={GREEN}>{plural(maxWin, unit)}</Pill>
+        <div className="flex flex-col gap-[5px]">
+          <Pill color={RED} className="justify-start">{plural(maxLoss, unit)}</Pill>
+          <Pill color={GREEN} className="justify-start">{plural(maxWin, unit)}</Pill>
         </div>
       </div>
     </div>
@@ -318,7 +319,7 @@ function StreakCard({ stats, calendar }: { stats: any; calendar: any[] }) {
         />
       }
     >
-      <div className="grid grid-cols-2 gap-3 mt-2">
+      <div className="grid grid-cols-2 gap-[18px] mt-auto">
         <StreakCol heading="DAYS" cur={d.cur} type={d.type} maxWin={d.maxWin} maxLoss={d.maxLoss} unit="day" />
         <StreakCol heading="TRADES" cur={t?.current ?? 0} type={t?.type ?? "none"} maxWin={t?.maxWin ?? 0} maxLoss={t?.maxLoss ?? 0} unit="trade" />
       </div>
@@ -328,7 +329,7 @@ function StreakCard({ stats, calendar }: { stats: any; calendar: any[] }) {
 
 export function KpiRow({ stats, calendar, currency }: { stats: any; calendar: any[]; currency: string }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 stagger">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 stagger">
       <WinCard stats={stats} cur={currency} />
       <AvgCard stats={stats} cur={currency} />
       <PFCard stats={stats} cur={currency} />
@@ -347,7 +348,7 @@ function polar(cx: number, cy: number, r: number, i: number) {
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 
-export function TradeScoreCard({ stats, calendar, account }: { stats: any; calendar: any[]; account?: any }) {
+export function TradeScoreCard({ stats, calendar, account, className }: { stats: any; calendar: any[]; account?: any; className?: string }) {
   const days = [...(calendar ?? [])].sort((a, b) => a.date.localeCompare(b.date));
   let cum = 0, peak = 0, maxDD = 0;
   for (const d of days) {
@@ -393,13 +394,13 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
   const anchors = ["middle", "start", "start", "middle", "end", "end"] as const;
 
   return (
-    <div className="group relative hover:z-30 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4 card-hover flex flex-col">
+    <div className={cn("group relative hover:z-30 min-w-0", PANEL, "px-6 py-[22px] card-hover flex flex-col", className)}>
       <div className="flex items-center gap-1.5">
-        <p className="text-xs font-semibold">Trade Score</p>
-        <Info className="w-3 h-3 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
+        <p className="text-sm font-bold">Trade Score</p>
+        <Info className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-indigo-400 transition-colors" />
       </div>
 
-      <svg viewBox="0 0 340 226" className="w-full max-w-[320px] mx-auto">
+      <svg viewBox="0 0 340 226" className="w-full mt-1.5 mx-auto">
         {[0.2, 0.4, 0.6, 0.8, 1].map((k) => (
           <polygon key={k} points={ring(k)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
         ))}
@@ -417,23 +418,23 @@ export function TradeScoreCard({ stats, calendar, account }: { stats: any; calen
           const [x, y] = polar(CX, CY, R + 14, i);
           const dy = i === 0 ? -2 : i === 3 ? 9 : 3;
           return (
-            <text key={label} x={x} y={y + dy} textAnchor={anchors[i]} fontSize={10.5} style={{ fill: "hsl(var(--muted-foreground))" }}>
+            <text key={label} x={x} y={y + dy} textAnchor={anchors[i]} fontSize={10.5} style={{ fill: "#8a94c4" }}>
               {label}
             </text>
           );
         })}
       </svg>
 
-      <div className="border-t mt-1 pt-3 flex items-center gap-4">
+      <div className="border-t dark:border-[#7a8cff]/[0.12] mt-auto pt-4 flex items-end gap-5 flex-wrap">
         <div className="shrink-0">
-          <p className="text-[10px] text-muted-foreground">Your Trade Score</p>
-          <p className="text-2xl font-bold tracking-tight">{stats ? shown.toFixed(2) : "—"}</p>
+          <p className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">Your Trade Score</p>
+          <p className="text-[34px] font-extrabold tracking-[-0.02em] leading-[1.1] mt-1 tabular-nums">{stats ? shown.toFixed(2) : "—"}</p>
         </div>
-        <div className="flex-1">
-          <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg,#f87171,#facc15,#4ade80)" }}>
-            <div className="score-marker absolute top-1/2 w-3.5 h-3.5 rounded-full border-2 border-white/90 bg-card shadow" style={{ left: `${total}%`, transform: "translate(-50%,-50%)" }} />
+        <div className="flex-[1_1_150px] min-w-0">
+          <div className="relative h-2 rounded-full" style={{ background: "linear-gradient(90deg,#f87171,#fbbf24 50%,#4ade80)" }}>
+            <div className="score-marker absolute top-1/2 w-4 h-4 rounded-full border-[3px] border-[#0b1130] bg-[#fbbf24] shadow-[0_0_0_1px_#fbbf24]" style={{ left: `${total}%`, transform: "translate(-50%,-50%)" }} />
           </div>
-          <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground">
+          <div className="flex justify-between mt-2 text-[10px] text-muted-foreground dark:text-[#7d88bd]">
             {[0, 20, 40, 60, 80, 100].map((n) => <span key={n}>{n}</span>)}
           </div>
         </div>

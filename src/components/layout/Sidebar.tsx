@@ -14,8 +14,8 @@ const navItems = [
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/propfirm", icon: Building2, label: "Prop Firm" },
-  { href: "/playbook", icon: BookOpen, label: "Playbook" },
   { href: "/reports", icon: FileText, label: "Laporan" },
+  { href: "/playbook", icon: BookOpen, label: "Playbook" },
 ];
 
 export default function Sidebar() {
@@ -24,7 +24,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-[68px] flex-col items-center py-4 gap-1.5 bg-card dark:bg-[#080d24] border-r dark:border-[#27358a]/30 shrink-0">
+      <aside className="hidden md:flex w-[68px] flex-col items-center py-4 gap-1.5 bg-card dark:bg-[#080d22] border-r dark:border-[#7a8cff]/12 shrink-0">
         <Link href="/dashboard" className="w-9 h-9 bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] rounded-xl flex items-center justify-center mb-3 hover:brightness-110 transition">
           <TrendingUp className="w-[18px] h-[18px] text-white" />
         </Link>

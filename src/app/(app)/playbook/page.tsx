@@ -1,19 +1,79 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, BookOpen, TrendingUp, Target, Pencil, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
-import { cn, formatCurrency, formatR } from "@/lib/utils";
+import { Plus, Pencil, Trash2, X, Check, AlertTriangle, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PANEL, BTN_PRIMARY, PAGE, H1, SUB, H2, CAP, LABEL, WIN, LOSS } from "@/lib/theme";
 
-const TIMEFRAMES = ["M1","M5","M15","M30","H1","H4","D1","W1"];
+const TIMEFRAMES = ["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1"];
+const GRADES = ["A++", "A+", "A", "B"];
+const RULES_KEY = "tj-discipline-rules";
 
-function SetupCatBadge({ cat }: { cat: string | null }) {
-  if (!cat) return null;
-  const colors: Record<string, string> = {
-    "A++": "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-300",
-    "A+":  "bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-300",
-    "A":   "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300",
-    "B":   "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300",
-  };
-  return <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border", colors[cat] ?? "")}>{cat}</span>;
+type Status = "Terjaga" | "Dilanggar" | "Sebagian";
+type Rule = { id: string; title: string; caption: string; status: Status };
+
+const GRADE_CLS: Record<string, string> = {
+  "A++": "bg-indigo-500/15 text-indigo-700 border-indigo-400/50 dark:bg-indigo-500/20 dark:text-[#c7d2fe] dark:border-indigo-400/50",
+  "A+": "bg-violet-500/15 text-violet-700 border-violet-400/50 dark:bg-violet-500/20 dark:text-[#ddd6fe] dark:border-violet-400/50",
+  "A": "bg-blue-500/15 text-blue-700 border-blue-400/50 dark:bg-blue-500/20 dark:text-[#bfdbfe] dark:border-blue-400/50",
+  "B": "bg-zinc-400/15 text-zinc-600 border-zinc-400/40 dark:bg-zinc-400/15 dark:text-[#d4d4d8] dark:border-zinc-400/40",
+};
+
+const STATUS_CLS: Record<Status, string> = {
+  Terjaga: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:bg-emerald-400/15 dark:text-[#6ee7b7] dark:border-emerald-400/30",
+  Dilanggar: "bg-red-500/15 text-red-700 border-red-500/30 dark:bg-red-400/15 dark:text-[#fca5a5] dark:border-red-400/30",
+  Sebagian: "bg-amber-500/15 text-amber-700 border-amber-500/35 dark:bg-amber-400/15 dark:text-[#fcd34d] dark:border-amber-400/35",
+};
+const STATUS_ICON_CLS: Record<Status, string> = {
+  Terjaga: "text-emerald-700 border-emerald-500/35 bg-emerald-500/10 dark:text-[#6ee7b7] dark:border-emerald-400/35 dark:bg-emerald-400/10",
+  Dilanggar: "text-red-700 border-red-500/35 bg-red-500/10 dark:text-[#fca5a5] dark:border-red-400/35 dark:bg-red-400/10",
+  Sebagian: "text-emerald-700 border-emerald-500/35 bg-emerald-500/10 dark:text-[#6ee7b7] dark:border-emerald-400/35 dark:bg-emerald-400/10",
+};
+const STATUS_ORDER: Status[] = ["Terjaga", "Dilanggar", "Sebagian"];
+
+const SAMPLE_SETUPS = [
+  { id: "sample-1", name: "London Breakout", description: "Break range Asia saat pembukaan London", grade: "A++", trades: 142, wr: 38.7, pf: 1.21,
+    checklist: ["Range Asia jelas dan tidak lebih dari 12 USD", "Candle breakout menutup di luar range", "Stop di sisi lain range, target minimal 2R"] },
+  { id: "sample-2", name: "Liquidity Sweep Reversal", description: "Reversal setelah sweep high atau low penting", grade: "A+", trades: 96, wr: 34.4, pf: 1.08,
+    checklist: ["Wick menembus level lalu close kembali di dalam", "Ada penolakan di timeframe 5 menit", "Stop di atas wick sweep"] },
+  { id: "sample-3", name: "Trend Pullback", description: "Entry searah tren saat koreksi ke zona minat", grade: "A", trades: 88, wr: 30.7, pf: 0.94,
+    checklist: ["Struktur H1 searah dengan arah entry", "Pullback berhenti di zona 50–62% impuls", "Konfirmasi break struktur kecil"] },
+  { id: "sample-4", name: "News Fade", description: "Melawan lonjakan awal setelah rilis berita", grade: "B", trades: 41, wr: 24.4, pf: 0.62,
+    checklist: ["Tunggu 5 menit pertama setelah rilis", "Spread sudah kembali normal", "Lot dikurangi setengah dari biasanya"] },
+];
+
+const DEFAULT_RULES: Rule[] = [
+  { id: "r1", title: "Risiko maksimal 1% per trade", caption: "Tidak ada pelanggaran bulan ini", status: "Terjaga" },
+  { id: "r2", title: "Maksimal 3 trade per hari", caption: "Dilanggar 1× · 01 Okt 26 dengan 6 trade", status: "Dilanggar" },
+  { id: "r3", title: "Berhenti setelah 2 loss beruntun", caption: "Perlu data jam entry untuk verifikasi penuh", status: "Sebagian" },
+];
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function normalizeRules(v: any): Rule[] | null {
+  if (!Array.isArray(v)) return null;
+  const out: Rule[] = [];
+  for (const it of v) {
+    if (typeof it === "string") {
+      if (it.trim()) out.push({ id: uid(), title: it.trim(), caption: "Belum dipantau otomatis", status: "Terjaga" });
+    } else if (it && typeof it === "object" && typeof it.title === "string") {
+      out.push({
+        id: typeof it.id === "string" ? it.id : uid(),
+        title: it.title,
+        caption: typeof it.caption === "string" ? it.caption : "Belum dipantau otomatis",
+        status: STATUS_ORDER.includes(it.status) ? it.status : "Terjaga",
+      });
+    }
+  }
+  return out;
+}
+
+function GradeBadge({ grade, className }: { grade: string | null; className?: string }) {
+  if (!grade) return null;
+  return (
+    <span className={cn("inline-flex items-center px-[9px] py-[3px] rounded-[7px] text-[11px] font-extrabold border", GRADE_CLS[grade], className)}>
+      {grade}
+    </span>
+  );
 }
 
 function SetupFormModal({ setup, onClose, onSaved }: { setup?: any; onClose: () => void; onSaved: () => void }) {
@@ -42,15 +102,15 @@ function SetupFormModal({ setup, onClose, onSaved }: { setup?: any; onClose: () 
     setSaving(false);
   }
 
-  const inputCls = "w-full text-xs px-3 py-2 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all";
-  const labelCls = "block text-[11px] text-muted-foreground mb-1";
+  const inputCls = "w-full text-xs px-3 py-2 rounded-xl border bg-background dark:bg-[#070b1d]/70 dark:border-[#27358a]/50 focus:outline-none focus:ring-2 focus:ring-[#4f6bff]/50 transition-all";
+  const labelCls = cn(LABEL, "block mb-1 normal-case tracking-normal");
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-zinc-900 border rounded-xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-sm font-semibold">{setup ? "Edit Setup" : "New Setup"}</h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted"><X className="w-4 h-4" /></button>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-[#0c1330] border dark:border-[#27358a]/50 rounded-2xl w-full max-w-lg shadow-2xl max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b dark:border-[#27358a]/50">
+          <h2 className="text-sm font-bold">{setup ? "Edit Setup" : "New Setup"}</h2>
+          <button onClick={onClose} aria-label="Close" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -78,12 +138,12 @@ function SetupFormModal({ setup, onClose, onSaved }: { setup?: any; onClose: () 
             <textarea className={cn(inputCls, "min-h-[96px] resize-y")} value={form.rules} onChange={set("rules")} placeholder={"1. Wait for structure break\n2. Look for retest\n3. Entry on confirmation candle\n4. SL below swing low"} />
           </div>
           <div>
-            <label className={labelCls}>Tags (comma separated)</label>
-            <input className={inputCls} value={form.tags} onChange={set("tags")} placeholder="snr, momentum, reversal..." />
+            <label className={labelCls}>Tags (comma separated, add A++ / A+ / A / B for grade)</label>
+            <input className={inputCls} value={form.tags} onChange={set("tags")} placeholder="A+, snr, momentum..." />
           </div>
-          <div className="flex justify-between pt-2 border-t">
-            <button type="button" onClick={onClose} className="text-xs px-4 py-2 rounded-lg border text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="text-xs px-5 py-2 rounded-lg bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white hover:brightness-110 transition-colors disabled:opacity-60 font-medium">
+          <div className="flex justify-between pt-3 border-t dark:border-[#27358a]/50">
+            <button type="button" onClick={onClose} className="text-xs px-4 py-2 rounded-xl border dark:border-[#27358a]/50 text-muted-foreground hover:bg-muted transition-colors">Cancel</button>
+            <button type="submit" disabled={saving} className={cn("text-xs px-5 py-2 rounded-xl transition-colors disabled:opacity-60 font-semibold", BTN_PRIMARY)}>
               {saving ? "Saving..." : setup ? "Save Changes" : "Create Setup"}
             </button>
           </div>
@@ -93,89 +153,99 @@ function SetupFormModal({ setup, onClose, onSaved }: { setup?: any; onClose: () 
   );
 }
 
-function SetupCard({ setup, onEdit, onDelete, stats }: { setup: any; onEdit: () => void; onDelete: () => void; stats: any }) {
-  const [expanded, setExpanded] = useState(false);
-  const wr = stats?.winRate ?? null;
-  const trades = stats?.totalTrades ?? 0;
-  const pnl = stats?.netPnL ?? null;
-  const avgR = stats?.avgR ?? null;
+type CardData = {
+  id: string; name: string; description: string; grade: string | null;
+  trades: number | null; wr: number | null; pf: number | null; checklist: string[];
+};
 
+function SetupCard({ data, sample, onEdit, onDelete }: { data: CardData; sample: boolean; onEdit?: () => void; onDelete?: () => void }) {
+  const { wr, pf, trades } = data;
+  const good = pf !== null ? pf >= 1 : wr !== null ? wr >= 50 : false;
+  const bar = wr !== null ? Math.max(0, Math.min(100, wr)) : 0;
+  const tile = "rounded-xl bg-secondary/60 border border-border dark:bg-white/[0.04] dark:border-[#7a8cff]/[0.12] px-3 py-2.5 flex flex-col gap-[3px] min-w-0";
+  const lbl = "text-xs font-medium text-muted-foreground dark:text-[#8a94c4]";
   return (
-    <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold">{setup.name}</h3>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {setup.timeframe && <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">{setup.timeframe}</span>}
-                {setup.expectedRR && <span className="text-[10px] text-muted-foreground">RR: {setup.expectedRR}</span>}
-              </div>
-            </div>
+    <div className={cn(PANEL, "group p-5 md:px-6 md:py-[22px] flex flex-col gap-4 min-w-0 transition-all hover:dark:border-[#7a8cff]/40 hover:shadow-[0_20px_50px_-24px_rgba(79,107,255,0.6)]")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-[16px] leading-tight font-bold tracking-[-0.01em]">{data.name}</h3>
+            {sample && <span className="px-2 py-[1px] rounded-full text-[10px] font-semibold border border-[#4f6bff]/40 bg-[#4f6bff]/15 text-[#3b57e8] dark:text-[#9db0ff]">Contoh</span>}
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={onEdit} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground"><Pencil className="w-3.5 h-3.5" /></button>
-            <button onClick={onDelete} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#fee2e2] hover:text-[#dc2626] text-muted-foreground"><Trash2 className="w-3.5 h-3.5" /></button>
-          </div>
+          {data.description && <div className={cn(CAP, "mt-1")}>{data.description}</div>}
         </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-muted-foreground">Trades</p>
-            <p className="text-sm font-semibold">{trades}</p>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-muted-foreground">Win Rate</p>
-            <p className={cn("text-sm font-semibold", wr !== null ? (wr >= 50 ? "text-[#16a34a]" : "text-[#dc2626]") : "")}>
-              {wr !== null ? `${wr.toFixed(0)}%` : "—"}
-            </p>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-muted-foreground">Avg R</p>
-            <p className={cn("text-sm font-semibold", avgR !== null ? (avgR > 0 ? "text-[#16a34a]" : "text-[#dc2626]") : "")}>
-              {avgR !== null ? formatR(avgR) : "—"}
-            </p>
-          </div>
-          <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <p className="text-[10px] text-muted-foreground">Net P&L</p>
-            <p className={cn("text-sm font-semibold", pnl !== null ? (pnl > 0 ? "text-[#16a34a]" : "text-[#dc2626]") : "")}>
-              {pnl !== null ? formatCurrency(pnl) : "—"}
-            </p>
-          </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!sample && (
+            <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <button onClick={onEdit} aria-label="Edit setup" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground"><Pencil className="w-3.5 h-3.5" /></button>
+              <button onClick={onDelete} aria-label="Delete setup" className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-500/15 hover:text-red-500 text-muted-foreground"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          )}
+          <GradeBadge grade={data.grade} />
         </div>
+      </div>
 
-        {/* Description */}
-        {setup.description && <p className="text-xs text-muted-foreground mb-2">{setup.description}</p>}
+      <div className="grid grid-cols-3 gap-2">
+        <div className={tile}><span className={lbl}>Trade</span><b className="text-base font-extrabold tabular-nums">{trades ?? "—"}</b></div>
+        <div className={tile}><span className={lbl}>Win rate</span><b className={cn("text-base font-extrabold tabular-nums", good && WIN)}>{wr !== null ? `${wr.toFixed(1)}%` : "—"}</b></div>
+        <div className={tile}><span className={lbl}>PF</span><b className={cn("text-base font-extrabold tabular-nums", pf !== null && (pf >= 1 ? WIN : LOSS))}>{pf !== null ? pf.toFixed(2) : "—"}</b></div>
+      </div>
 
-        {/* Tags */}
-        {setup.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {setup.tags.map((tag: string) => (
-              <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">{tag}</span>
-            ))}
+      <div className="h-1.5 rounded-full bg-secondary dark:bg-white/[0.07]">
+        <div className="h-1.5 rounded-full bg-gradient-to-r from-[#4f6bff] to-[#8ea2ff]" style={{ width: `${bar}%` }} />
+      </div>
+
+      {data.checklist.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          {data.checklist.map((c, i) => (
+            <div key={i} className="flex items-start gap-2.5 text-[13px] leading-[1.45] text-foreground/85 dark:text-[#cdd4f5]">
+              <Check className="w-4 h-4 mt-px shrink-0 text-[#4f6bff] dark:text-[#6f86ff]" strokeWidth={1.7} />
+              <span className="min-w-0">{c}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RuleRow({ rule, last, onChange, onDelete }: { rule: Rule; last: boolean; onChange: (r: Rule) => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(rule.title);
+  const [caption, setCaption] = useState(rule.caption);
+  function commit() {
+    const t = title.trim();
+    if (t) onChange({ ...rule, title: t, caption: caption.trim() });
+    else { setTitle(rule.title); setCaption(rule.caption); }
+    setEditing(false);
+  }
+  const nextStatus = () => onChange({ ...rule, status: STATUS_ORDER[(STATUS_ORDER.indexOf(rule.status) + 1) % STATUS_ORDER.length] });
+  const inp = "w-full text-xs px-2.5 py-1.5 rounded-lg border bg-background dark:bg-[#070b1d]/70 dark:border-[#27358a]/50 focus:outline-none focus:ring-2 focus:ring-[#4f6bff]/50";
+  return (
+    <div className={cn("group flex items-center gap-3.5 py-3.5", !last && "border-b dark:border-[#7a8cff]/10")}>
+      <span className={cn("w-9 h-9 rounded-[11px] border flex items-center justify-center shrink-0", STATUS_ICON_CLS[rule.status])}>
+        {rule.status === "Dilanggar" ? <X className="w-4 h-4" strokeWidth={1.7} /> : <Check className="w-4 h-4" strokeWidth={1.7} />}
+      </span>
+      <div className="flex-1 min-w-0">
+        {editing ? (
+          <div className="flex flex-col gap-1.5" onKeyDown={e => { if (e.key === "Escape") { setTitle(rule.title); setCaption(rule.caption); setEditing(false); } }}>
+            <input autoFocus className={inp} value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") commit(); }} />
+            <input className={inp} value={caption} onChange={e => setCaption(e.target.value)} onKeyDown={e => { if (e.key === "Enter") commit(); }} onBlur={commit} placeholder="Keterangan" />
           </div>
-        )}
-
-        {/* Rules toggle */}
-        {setup.rules && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-[11px] text-indigo-600 hover:underline">
-            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            {expanded ? "Hide rules" : "Show rules & checklist"}
+        ) : (
+          <button type="button" onClick={() => { setTitle(rule.title); setCaption(rule.caption); setEditing(true); }} className="block text-left w-full" title="Klik untuk edit">
+            <b className="block text-[13.5px] font-bold">{rule.title}</b>
+            <span className={cn(CAP, "block mt-0.5")}>{rule.caption}</span>
           </button>
         )}
       </div>
-
-      {/* Expanded rules */}
-      {expanded && setup.rules && (
-        <div className="border-t px-4 py-3 bg-muted/30">
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Rules & Checklist</p>
-          <pre className="text-xs text-foreground whitespace-pre-wrap font-sans leading-relaxed">{setup.rules}</pre>
-        </div>
-      )}
+      <button type="button" onClick={nextStatus} title="Klik untuk ubah status"
+        className={cn("inline-flex items-center px-[9px] py-[3px] rounded-[7px] text-[11px] font-extrabold border shrink-0", STATUS_CLS[rule.status])}>
+        {rule.status}
+      </button>
+      <button type="button" onClick={onDelete} aria-label="Hapus aturan" className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted shrink-0">
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }
@@ -184,49 +254,61 @@ export default function PlaybookPage() {
   const [setups, setSetups] = useState<any[]>([]);
   const [setupStats, setSetupStats] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editSetup, setEditSetup] = useState<any>(null);
 
   async function fetchSetups() {
     setLoading(true);
-    const [setupsRes, statsRes] = await Promise.all([
-      fetch("/api/setups"),
-      fetch("/api/setups/stats"),
-    ]);
-    const setupsData = await setupsRes.json();
-    const statsData = statsRes.ok ? await statsRes.json() : {};
-    setSetups(Array.isArray(setupsData) ? setupsData : []);
-    setSetupStats(statsData);
+    try {
+      const [setupsRes, statsRes] = await Promise.all([fetch("/api/setups"), fetch("/api/setups/stats")]);
+      if (!setupsRes.ok) throw new Error("setups");
+      const setupsData = await setupsRes.json();
+      let statsData: any = {};
+      try { statsData = statsRes.ok ? await statsRes.json() : {}; } catch { statsData = {}; }
+      setSetups(Array.isArray(setupsData) ? setupsData : []);
+      setSetupStats(statsData && typeof statsData === "object" ? statsData : {});
+      setFailed(false);
+    } catch {
+      setSetups([]);
+      setSetupStats({});
+      setFailed(true);
+    }
     setLoading(false);
   }
-
   useEffect(() => { fetchSetups(); }, []);
 
+  const sampleMode = !loading && (failed || setups.length === 0);
+
   // Trades without a setup (banner)
-  const [unsetCount, setUnsetCount] = useState(0);
+  const [tradeInfo, setTradeInfo] = useState<{ unset: number; total: number } | null>(null);
   useEffect(() => {
     fetch("/api/trades?pageSize=1000")
-      .then(r => r.json())
-      .then(d => setUnsetCount((d.trades ?? []).filter((t: any) => !t.setupId).length))
-      .catch(() => {});
+      .then(r => { if (!r.ok) throw new Error("trades"); return r.json(); })
+      .then(d => {
+        const list: any[] = Array.isArray(d?.trades) ? d.trades : [];
+        const total = typeof d?.total === "number" ? d.total : list.length;
+        setTradeInfo({ unset: list.filter((t: any) => !t.setupId).length, total });
+      })
+      .catch(() => setTradeInfo(null));
   }, []);
 
+  let banner: { unset: number; total: number } | null = null;
+  if (tradeInfo && tradeInfo.total > 0) banner = tradeInfo.unset > 0 ? tradeInfo : null;
+  else if (sampleMode) banner = { unset: 112, total: 479 };
+
   // Discipline rules (stored per browser)
-  const DEFAULT_RULES = [
-    "Maks 3 trade per hari",
-    "Risiko maks 1% per trade",
-    "Stop trading setelah 2 loss beruntun",
-    "Wajib pasang Stop Loss sebelum entry",
-    "Tidak trading saat news high-impact",
-  ];
-  const [rules, setRules] = useState<string[]>(DEFAULT_RULES);
+  const [rules, setRules] = useState<Rule[]>(DEFAULT_RULES);
   const [newRule, setNewRule] = useState("");
   useEffect(() => {
-    try { const v = localStorage.getItem("tj-discipline-rules"); if (v) setRules(JSON.parse(v)); } catch {}
+    try {
+      const v = localStorage.getItem(RULES_KEY);
+      if (v) { const n = normalizeRules(JSON.parse(v)); if (n) setRules(n); }
+    } catch {}
   }, []);
-  function saveRules(next: string[]) {
+  function saveRules(next: Rule[]) {
     setRules(next);
-    try { localStorage.setItem("tj-discipline-rules", JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(RULES_KEY, JSON.stringify(next)); } catch {}
   }
 
   async function deleteSetup(id: string) {
@@ -235,96 +317,126 @@ export default function PlaybookPage() {
     fetchSetups();
   }
 
-  const totalTrades = Object.values(setupStats).reduce((s: number, v: any) => s + (v.totalTrades ?? 0), 0);
-  const totalPnL = Object.values(setupStats).reduce((s: number, v: any) => s + (v.netPnL ?? 0), 0);
+  const cards: CardData[] = sampleMode
+    ? SAMPLE_SETUPS.map(s => ({ id: s.id, name: s.name, description: s.description, grade: s.grade, trades: s.trades, wr: s.wr, pf: s.pf, checklist: s.checklist }))
+    : setups.map(s => {
+        const st = setupStats[s.id];
+        const num = (v: any) => (typeof v === "number" && isFinite(v) ? v : null);
+        return {
+          id: s.id,
+          name: s.name,
+          description: s.description ?? "",
+          grade: (s.tags ?? []).find((t: string) => GRADES.includes(t)) ?? null,
+          trades: num(st?.totalTrades) ?? 0,
+          wr: num(st?.winRate),
+          pf: num(st?.profitFactor ?? st?.pf),
+          checklist: String(s.rules ?? "").split("\n").map((l: string) => l.replace(/^\s*(?:\d+[.)]|[-*•])\s*/, "").trim()).filter(Boolean),
+        };
+      });
+
+  const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const catDesc: Record<string, string> = {
+    "A++": "Semua kriteria terpenuhi dan konfirmasi kuat",
+    "A+": "Hampir semua kriteria terpenuhi",
+    "A": "Setup valid dengan satu kriteria lemah",
+    "B": "Marginal, gunakan ukuran lot kecil",
+  };
 
   return (
-    <div className="p-4">
+    <div className={PAGE}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Playbook</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Manage your trading setups & strategies</p>
+          <h1 className={H1}>Playbook</h1>
+          <p className={SUB}>Pustaka setup trading, checklist eksekusi, dan aturan disiplin Anda</p>
+          {sampleMode && (
+            <span className="inline-flex items-center mt-3 px-3 py-1 rounded-full text-[11px] font-semibold border border-[#4f6bff]/40 bg-[#4f6bff]/15 text-[#3b57e8] dark:text-[#9db0ff]">
+              Data contoh — buat setup pertama untuk menggantikannya
+            </span>
+          )}
         </div>
         <button onClick={() => { setEditSetup(null); setShowForm(true); }}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white hover:brightness-110 transition-colors">
-          <Plus className="w-3.5 h-3.5" /> New Setup
+          className={cn("inline-flex items-center gap-2 h-10 px-4 rounded-xl text-[13px] font-semibold transition-all", BTN_PRIMARY)}>
+          <Plus className="w-4 h-4" strokeWidth={1.7} /> Setup Baru
         </button>
       </div>
 
-      {/* Summary */}
-      {setups.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
-            <p className="text-[11px] text-muted-foreground mb-1">Total Setups</p>
-            <p className="text-xl font-semibold">{setups.length}</p>
+      {/* Unset trades banner */}
+      {banner && (
+        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent dark:from-[#78500a]/[0.22] dark:to-[#0a1028]/80 px-[22px] py-[18px] flex flex-wrap items-center gap-4">
+          <span className="w-9 h-9 rounded-[11px] border border-amber-500/35 bg-amber-500/10 dark:border-amber-400/35 dark:bg-amber-400/[0.12] text-amber-600 dark:text-[#fcd34d] flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4 h-4" strokeWidth={1.7} />
+          </span>
+          <div className="flex-1 basis-[280px] min-w-0">
+            <b className="text-sm font-bold">{banner.unset} trade belum diberi setup</b>
+            <div className={cn(CAP, "mt-[3px]")}>Beri tag agar statistik per setup mencakup seluruh {banner.total} transaksi Anda.</div>
           </div>
-          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
-            <p className="text-[11px] text-muted-foreground mb-1">Total Trades</p>
-            <p className="text-xl font-semibold">{totalTrades}</p>
-          </div>
-          <div className="rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-3">
-            <p className="text-[11px] text-muted-foreground mb-1">Combined P&L</p>
-            <p className={cn("text-xl font-semibold", totalPnL > 0 ? "text-[#16a34a]" : totalPnL < 0 ? "text-[#dc2626]" : "")}>
-              {formatCurrency(totalPnL)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {unsetCount > 0 && (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
-          <p className="text-xs text-amber-600 dark:text-amber-300"><b>{unsetCount} trade</b> belum diberi setup. Tandai agar statistik per setup akurat.</p>
-          <a href="/trades" className="text-xs font-medium text-amber-600 dark:text-amber-300 hover:underline shrink-0">Buka Trade Log →</a>
+          <a href="/trades" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-[13px] font-semibold border border-amber-500/45 text-amber-700 dark:text-[#fde68a] hover:bg-amber-500/10 transition-colors">
+            Tag sekarang <ChevronRight className="w-4 h-4" strokeWidth={1.7} />
+          </a>
         </div>
       )}
 
       {/* Setup cards */}
       {loading ? (
         <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Loading...</div>
-      ) : setups.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center mb-3">
-            <BookOpen className="w-6 h-6 text-indigo-600" />
-          </div>
-          <p className="text-sm font-medium mb-1">No setups yet</p>
-          <p className="text-xs text-muted-foreground mb-4">Create your first trading setup to track performance per strategy</p>
-          <button onClick={() => setShowForm(true)}
-            className="text-xs px-4 py-2 rounded-lg bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] shadow-[0_8px_24px_-8px_rgba(79,107,255,0.8)] text-white hover:brightness-110 transition-colors">
-            Create First Setup
-          </button>
-        </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {setups.map((setup) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {cards.map(c => (
             <SetupCard
-              key={setup.id}
-              setup={setup}
-              stats={setupStats[setup.id]}
-              onEdit={() => { setEditSetup(setup); setShowForm(true); }}
-              onDelete={() => deleteSetup(setup.id)}
+              key={c.id}
+              data={c}
+              sample={sampleMode}
+              onEdit={sampleMode ? undefined : () => { setEditSetup(setups.find(s => s.id === c.id)); setShowForm(true); }}
+              onDelete={sampleMode ? undefined : () => deleteSetup(c.id)}
             />
           ))}
         </div>
       )}
 
-      {/* Discipline rules */}
-      <div className="mt-4 rounded-2xl border bg-card dark:border-[#27358a]/40 dark:bg-gradient-to-br dark:from-[#14204d]/55 dark:via-[#0c1330]/55 dark:to-[#0a1024]/70 p-4">
-        <p className="text-xs font-semibold mb-3">Discipline Rules</p>
-        <ul className="space-y-1.5 mb-3">
-          {rules.length === 0 && <li className="text-xs text-muted-foreground">Belum ada aturan. Tambahkan aturan disiplin trading kamu.</li>}
-          {rules.map((r, i) => (
-            <li key={i} className="flex items-center justify-between gap-2 text-xs">
-              <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#4f6bff]" />{r}</span>
-              <button onClick={() => saveRules(rules.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-foreground">✕</button>
-            </li>
-          ))}
-        </ul>
-        <form onSubmit={e => { e.preventDefault(); const v = newRule.trim(); if (v) { saveRules([...rules, v]); setNewRule(""); } }} className="flex gap-2">
-          <input value={newRule} onChange={e => setNewRule(e.target.value)} placeholder="mis. Maks 3 trade per hari"
-            className="flex-1 text-xs border rounded-xl px-3 py-1.5 bg-background" />
-          <button className="text-xs px-3 py-1.5 rounded-xl bg-gradient-to-b from-[#4f6bff] to-[#2f4bd8] text-white hover:brightness-110">Tambah</button>
-        </form>
+      {/* Discipline + categories */}
+      <div className="flex flex-wrap gap-4 items-stretch">
+        <div className={cn(PANEL, "flex-[2_1_560px] min-w-0 px-5 py-5 md:px-6 md:py-[22px]")}>
+          <h2 className={H2}>Aturan Disiplin</h2>
+          <div className={cn(CAP, "mt-1 mb-2")}>Dipantau otomatis dari data trade {monthLabel}</div>
+          <div className="flex flex-col">
+            {rules.length === 0 && <div className={cn(CAP, "py-3")}>Belum ada aturan. Tambahkan aturan disiplin trading Anda.</div>}
+            {rules.map((r, i) => (
+              <RuleRow
+                key={r.id}
+                rule={r}
+                last={i === rules.length - 1}
+                onChange={nr => saveRules(rules.map(x => (x.id === r.id ? nr : x)))}
+                onDelete={() => saveRules(rules.filter(x => x.id !== r.id))}
+              />
+            ))}
+          </div>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              const v = newRule.trim();
+              if (v) { saveRules([...rules, { id: uid(), title: v, caption: "Belum dipantau otomatis", status: "Terjaga" }]); setNewRule(""); }
+            }}
+            className="flex gap-2 mt-3 pt-4 border-t dark:border-[#7a8cff]/10"
+          >
+            <input value={newRule} onChange={e => setNewRule(e.target.value)} placeholder="Tambah aturan, mis. Wajib pasang Stop Loss"
+              className="flex-1 min-w-0 text-xs border rounded-xl px-3 py-2 bg-background dark:bg-[#070b1d]/70 dark:border-[#27358a]/50 focus:outline-none focus:ring-2 focus:ring-[#4f6bff]/50" />
+            <button type="submit" className={cn("text-xs font-semibold px-4 py-2 rounded-xl", BTN_PRIMARY)}>Tambah</button>
+          </form>
+        </div>
+
+        <div className={cn(PANEL, "flex-[1_1_300px] min-w-0 px-5 py-5 md:px-6 md:py-[22px]")}>
+          <h2 className={H2}>Kategori Setup</h2>
+          <div className={cn(CAP, "mt-1 mb-4")}>Penilaian kualitas sebelum entry</div>
+          <div className="flex flex-col gap-3.5">
+            {GRADES.map(g => (
+              <div key={g} className="flex items-center gap-3">
+                <GradeBadge grade={g} className="w-11 justify-center" />
+                <span className={cn(CAP, "text-[12.5px] leading-normal")}>{catDesc[g]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {showForm && (

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { calcWinRate, calcAvgR } from "@/lib/utils";
+import { calcWinRate, calcAvgR, calcProfitFactor } from "@/lib/utils";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -23,6 +23,7 @@ export async function GET() {
       totalTrades: trades.length,
       winRate: calcWinRate(trades),
       avgR: calcAvgR(trades),
+      profitFactor: Math.round(calcProfitFactor(trades) * 100) / 100,
       netPnL: Math.round(netPnL * 100) / 100,
     };
   }

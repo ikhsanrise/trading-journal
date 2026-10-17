@@ -25,21 +25,93 @@ export async function GET(req: NextRequest) {
     orderBy: { entryDate: "asc" },
   });
 
+  const selected = accounts.filter((a) => accountIds.includes(a.id));
+  const currency: string = (selected[0] as any)?.currency ?? "USD";
+  const initial = selected.reduce((s, a) => s + (Number((a as any).initialBalance) || 0), 0);
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const dayOf = (t: any) => (t.exitDate ?? t.entryDate).toISOString().slice(0, 10);
+
   // ── Drawdown curve ────────────────────────────────────────────────────────
+  // balance = cumulative P&L; drawdownAmt = balance - peak (currency, <= 0);
+  // drawdown (%) is relative to peak equity (initial balance + peak P&L) when known.
   let peak = 0, balance = 0;
   const drawdownCurve = trades.map((t) => {
     balance += t.pnl ?? 0;
     peak = Math.max(peak, balance);
-    const dd = peak > 0 ? ((balance - peak) / peak) * 100 : 0;
+    const base = initial > 0 ? initial + peak : peak;
+    const amt = balance - peak;
+    const dd = base > 0 ? (amt / base) * 100 : 0;
     return {
-      date: (t.exitDate ?? t.entryDate).toISOString().slice(0, 10),
-      balance: Math.round(balance * 100) / 100,
-      drawdown: Math.round(dd * 100) / 100,
+      date: dayOf(t),
+      balance: r2(balance),
+      drawdown: r2(dd),
+      drawdownAmt: r2(amt),
     };
   });
   const maxDrawdown = drawdownCurve.length
     ? Math.min(...drawdownCurve.map((d) => d.drawdown))
     : 0;
+  const maxDrawdownAmt = drawdownCurve.length
+    ? Math.min(...drawdownCurve.map((d) => d.drawdownAmt))
+    : 0;
+
+  // ── Summary ───────────────────────────────────────────────────────────────
+  const pnls = trades.map((t) => t.pnl ?? 0);
+  const wins = pnls.filter((p) => p > 0);
+  const losses = pnls.filter((p) => p < 0);
+  const grossProfit = wins.reduce((s, p) => s + p, 0);
+  const grossLoss = losses.reduce((s, p) => s + p, 0);
+  const netPnLAll = pnls.reduce((s, p) => s + p, 0);
+  const avgWin = wins.length ? grossProfit / wins.length : 0;
+  const avgLoss = losses.length ? grossLoss / losses.length : 0;
+  const dayPnl = new Map<string, number>();
+  for (const t of trades) dayPnl.set(dayOf(t), (dayPnl.get(dayOf(t)) ?? 0) + (t.pnl ?? 0));
+  let bestDay: { date: string; pnl: number } | null = null;
+  let worstDay: { date: string; pnl: number } | null = null;
+  for (const [date, pnl] of dayPnl) {
+    if (!bestDay || pnl > bestDay.pnl) bestDay = { date, pnl: r2(pnl) };
+    if (!worstDay || pnl < worstDay.pnl) worstDay = { date, pnl: r2(pnl) };
+  }
+  const summary = {
+    expectancy: trades.length ? r2(netPnLAll / trades.length) : 0,
+    avgWin: r2(avgWin),
+    avgLoss: r2(avgLoss),
+    winCount: wins.length,
+    lossCount: losses.length,
+    payoffRatio: avgLoss !== 0 ? r2(avgWin / Math.abs(avgLoss)) : 0,
+    profitFactor: grossLoss !== 0 ? r2(grossProfit / Math.abs(grossLoss)) : 0,
+    netPnL: r2(netPnLAll),
+    bestDay,
+    worstDay,
+  };
+
+  // ── Long vs Short ─────────────────────────────────────────────────────────
+  const dirStats = (dir: string) => {
+    const ts = trades.filter((t) => String((t as any).direction ?? "").toLowerCase() === dir);
+    return {
+      trades: ts.length,
+      winRate: ts.length ? Math.round((ts.filter((t) => (t.pnl ?? 0) > 0).length / ts.length) * 1000) / 10 : 0,
+      pnl: r2(ts.reduce((s, t) => s + (t.pnl ?? 0), 0)),
+    };
+  };
+  const longShort = { long: dirStats("long"), short: dirStats("short") };
+
+  // ── P&L distribution (buckets in thousands for IDR, scaled for others) ───
+  const isIdr = currency === "IDR";
+  const edges = isIdr ? [-500, -100, -25, 0, 25, 100, 500] : [-50, -20, -5, 0, 5, 20, 50];
+  const unit = isIdr ? 1000 : 1;
+  const labels = isIdr
+    ? ["<-500rb", "-500...-100", "-100...-25", "-25...0", "0...25", "25...100", "100...500", ">500rb"]
+    : ["<-50", "-50...-20", "-20...-5", "-5...0", "0...5", "5...20", "20...50", ">50"];
+  const counts = new Array(8).fill(0) as number[];
+  for (const p of pnls) {
+    const v = p / unit;
+    let i = edges.findIndex((e) => v < e);
+    if (i === -1) i = 7;
+    // a zero P&L trade falls in the first non-negative bucket
+    counts[i] += 1;
+  }
+  const pnlDistribution = labels.map((label, i) => ({ label, count: counts[i], positive: i >= 4 }));
 
   // ── Heatmap: day of week × hour ────────────────────────────────────────────
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -137,7 +209,8 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({
-    drawdownCurve, maxDrawdown,
+    drawdownCurve, maxDrawdown, maxDrawdownAmt,
+    currency, summary, longShort, pnlDistribution,
     heatmapData,
     bySetup, byCategory, bySession, byDow,
     totalTrades: trades.length,

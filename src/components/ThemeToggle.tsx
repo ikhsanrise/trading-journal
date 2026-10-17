@@ -10,7 +10,7 @@ export function ThemeToggle() {
   if (!mounted) return null;
 
   return (
-    <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+    <div className="flex items-center gap-0.5 bg-muted dark:bg-white/5 rounded-[10px] p-[3px]">
       {[
         { value: "light", icon: Sun },
         { value: "system", icon: Monitor },
@@ -19,14 +19,14 @@ export function ThemeToggle() {
         <button
           key={value}
           onClick={() => setTheme(value)}
-          className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${
+          className={`w-[30px] h-7 flex items-center justify-center rounded-lg transition-colors ${
             theme === value
-              ? "bg-card text-foreground shadow-sm"
+              ? "bg-card dark:bg-[#4f6bff]/25 text-foreground dark:text-[#c7d0ff] shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
           title={value}
         >
-          <Icon className="w-3.5 h-3.5" />
+          <Icon className="w-4 h-4" />
         </button>
       ))}
     </div>

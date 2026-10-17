@@ -679,7 +679,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <div className="mt-2.5">
+              <div key={`eq-${equityView}`} className="mt-2.5 chart-wipe">
               {cumulativeCurve.length > 0 ? (
                 <ResponsiveContainer width="100%" height={224}>
                   <AreaChart data={cumulativeCurve} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -765,7 +765,7 @@ export default function DashboardPage() {
                       <path d="M12,68 A52,52 0 0 1 116,68" fill="none" stroke="hsl(var(--muted))" strokeWidth="10" strokeLinecap="round" />
                       {goalPct > 0 && (
                         <path d="M12,68 A52,52 0 0 1 116,68" fill="none" stroke={goalPct >= 100 ? "#4ade80" : "#6f86ff"} strokeWidth="10" strokeLinecap="round"
-                          pathLength={100} strokeDasharray={`${Math.min(goalPct, 100)} 100`} style={{ filter: "drop-shadow(0 0 6px rgba(79,107,255,0.7))" }} />
+                          pathLength={100} strokeDasharray={`${Math.min(goalPct, 100)} 100`} className="goal-arc" style={{ ["--goal" as any]: Math.min(goalPct, 100), filter: "drop-shadow(0 0 6px rgba(79,107,255,0.7))" }} />
                       )}
                     </svg>
                     <div className="absolute inset-x-0 bottom-0.5 text-center text-[17px] font-extrabold" style={{ color: goalPct >= 100 ? "#4ade80" : "#a5b4ff" }}>{goalPct.toFixed(0)}%</div>
@@ -803,7 +803,7 @@ export default function DashboardPage() {
                     <div className={cn("flex items-center gap-3.5 text-[13px]", ROW_FX)}>
                       <span className="w-[72px] shrink-0 font-semibold truncate capitalize">{sessionLabel[s.session] ?? s.session}</span>
                       <div className="flex-1 min-w-0 h-2 rounded-full bg-secondary dark:bg-white/[0.07]">
-                        <div className={cn("h-2 rounded-full bg-gradient-to-r from-[#4f6bff] to-[#8ea2ff]", BAR_FX)} style={{ width: `${Math.max(0, Math.min(100, s.winRate))}%` }} />
+                        <div className={cn("h-2 rounded-full bg-gradient-to-r from-[#4f6bff] to-[#8ea2ff] bar-grow", BAR_FX)} style={{ width: `${Math.max(0, Math.min(100, s.winRate))}%` }} />
                       </div>
                       <b className="font-mono tabular-nums w-10 shrink-0 text-right">{s.winRate}%</b>
                     </div>
@@ -831,7 +831,7 @@ export default function DashboardPage() {
                         <span className="w-[34px] shrink-0 font-semibold">{r.label}</span>
                         <div className="flex-1 min-w-0 relative h-2 rounded-full bg-secondary dark:bg-white/[0.07]">
                           <div className="absolute left-1/2 -top-[3px] -bottom-[3px] w-px bg-[#a5b4ff]/40" />
-                          <div className={cn("absolute top-0 bottom-0", BAR_FX, r.pnl >= 0 ? "left-1/2 rounded-r-full bg-gradient-to-r from-[#16a34a] to-[#4ade80]" : "right-1/2 rounded-l-full bg-gradient-to-l from-[#b91c1c] to-[#f87171]")}
+                          <div className={cn("absolute top-0 bottom-0", BAR_FX, r.pnl >= 0 ? "left-1/2 rounded-r-full bg-gradient-to-r from-[#16a34a] to-[#4ade80] bar-grow" : "right-1/2 rounded-l-full bg-gradient-to-l from-[#b91c1c] to-[#f87171] bar-grow-r")}
                             style={{ width: `${(Math.abs(r.pnl) / dowMax) * 50}%` }} />
                         </div>
                         <b className={cn("font-mono tabular-nums text-[12.5px] tracking-[-0.03em] text-right shrink-0 min-w-[72px] sm:w-24", pnlColor(r.pnl))}>{fmtNum(r.pnl)}</b>

@@ -238,8 +238,8 @@ function StatusBadge({ outcome }: { outcome: string | null }) {
 }
 
 function PnLPill({ value, currency }: { value: number | null; currency: string }) {
-  const base = "inline-block px-2.5 py-[5px] rounded-lg font-semibold text-[12.5px] font-mono tabular-nums";
-  if (value === null) return <span className="inline-block px-2.5 py-[5px] rounded-lg text-[11px] bg-muted text-muted-foreground font-semibold">Open</span>;
+  const base = "inline-block px-3 py-[5px] rounded-full border border-current/20 font-semibold text-[12.5px] font-mono tabular-nums";
+  if (value === null) return <span className="inline-block px-3 py-[5px] rounded-full text-[11px] bg-muted text-muted-foreground font-semibold">Open</span>;
   if (value > 0) return <span className={cn(base, "bg-[#16a34a]/20", WIN)}>{formatCurrency(value, currency)}</span>;
   if (value < 0) return <span className={cn(base, "bg-[#dc2626]/20", LOSS)}>{formatCurrency(value, currency)}</span>;
   return <span className={cn(base, "bg-muted text-muted-foreground")}>{formatCurrency(0, currency)}</span>;

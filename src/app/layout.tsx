@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -10,6 +10,18 @@ const jbmono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jbmono", w
 export const metadata: Metadata = {
   title: "Trading Journal",
   description: "Personal trading journal — forex & commodities",
+  applicationName: "Trading Journal",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Journal", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#070b1d",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -28,7 +28,7 @@ export default function Topbar({ user }: TopbarProps) {
   const initials = name.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "U";
 
   return (
-    <header className="h-[60px] bg-card dark:bg-transparent border-b dark:border-[#7a8cff]/10 flex items-center justify-between px-4 md:px-8 shrink-0 relative z-10">
+    <header className="h-[calc(60px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-card dark:bg-transparent border-b dark:border-[#7a8cff]/10 flex items-center justify-between px-4 md:px-8 shrink-0 relative z-10">
       <div id="topbar-title" className="text-xs font-medium text-muted-foreground dark:text-[#8a94c4]">
         Trading Journal <span className="opacity-50">/</span> <b className="font-semibold text-foreground dark:text-[#dfe4ff]">{title}</b>
       </div>

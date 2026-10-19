@@ -194,7 +194,8 @@ export async function GET(req: NextRequest) {
   // ── Performance by day of week ─────────────────────────────────────────────
   const dowMap = new Map<string, any[]>();
   for (const t of trades) {
-    const dow = DAYS[getDay(t.entryDate)];
+    // P&L dihitung pada hari trade ditutup (sama dengan Dashboard & Calendar)
+    const dow = DAYS[getDay(t.exitDate ?? t.entryDate)];
     if (!dowMap.has(dow)) dowMap.set(dow, []);
     dowMap.get(dow)!.push(t);
   }

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2 } from "lucide-react";
+import { Building2, Bot } from "lucide-react";
 import {
   TrendingUp, LayoutDashboard, ListOrdered, BarChart3,
   CalendarDays, BookOpen, Settings, FileText,
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/propfirm", icon: Building2, label: "Prop Firm" },
+  { href: "/ea-tracker", icon: Bot, label: "EA Tracker" },
   { href: "/reports", icon: FileText, label: "Laporan" },
   { href: "/playbook", icon: BookOpen, label: "Playbook" },
 ];

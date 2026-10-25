@@ -161,3 +161,78 @@ model Setup {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   trades      Trade[]
 }
+
+// ── EA Tracker ────────────────────────────────────────────────────────────────
+// Tambahkan blok ini ke akhir prisma/schema.prisma, lalu jalankan: npx prisma db push
+// userId sengaja berupa kolom biasa (tanpa relasi) supaya tidak mengubah model User yang sudah ada.
+
+model EaAccount {
+  id        String     @id @default(cuid())
+  userId    String
+  name      String
+  symbol    String?
+  magic     String?
+  login     String?
+  unit      String     @default("USD") // USD | USC (akun cent: 100 USC = 1 USD)
+  color     String?
+  createdAt DateTime   @default(now())
+  deals     EaDeal[]
+  flows     EaFlow[]
+  uploads   EaUpload[]
+
+  @@index([userId])
+}
+
+model EaDeal {
+  id          String    @id @default(cuid())
+  eaAccountId String
+  ticket      String
+  kind        String    @default("out") // in | out
+  time        DateTime
+  symbol      String?
+  side        String?
+  volume      Float?
+  profit      Float // bersih: profit + commission + fee + swap, dalam satuan akun (USD atau USC)
+  uploadId    String?
+  account     EaAccount @relation(fields: [eaAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([eaAccountId, ticket])
+  @@index([eaAccountId, time])
+  @@index([uploadId])
+}
+
+model EaFlow {
+  id          String    @id @default(cuid())
+  eaAccountId String
+  ticket      String
+  time        DateTime
+  type        String // deposit | withdraw
+  amount      Float // selalu positif, dalam satuan akun
+  comment     String?
+  uploadId    String?
+  account     EaAccount @relation(fields: [eaAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([eaAccountId, ticket])
+  @@index([eaAccountId, time])
+  @@index([uploadId])
+}
+
+model EaUpload {
+  id          String    @id @default(cuid())
+  eaAccountId String
+  filename    String
+  newDeals    Int       @default(0)
+  dupDeals    Int       @default(0)
+  newFlows    Int       @default(0)
+  periodFrom  DateTime?
+  periodTo    DateTime?
+  createdAt   DateTime  @default(now())
+  account     EaAccount @relation(fields: [eaAccountId], references: [id], onDelete: Cascade)
+
+  @@index([eaAccountId, createdAt])
+}
+
+model EaSetting {
+  userId String @id
+  usdIdr Float  @default(16250)
+}

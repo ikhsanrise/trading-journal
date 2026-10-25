@@ -23,6 +23,7 @@ const CUR_KEY = "tj-ea-cur";
 const TIP_ROW = "dark:bg-white/[0.04] dark:border-[#7a8cff]/16";
 const INNER = "rounded-[14px] border bg-secondary/40 dark:bg-white/[0.04] dark:border-[#7a8cff]/16 p-3.5";
 const GREEN = "#4ade80", RED = "#f87171", AMBER = "#facc15", MUTED = "#8a94c4";
+const TILE = "transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[#5b74ff]/50 hover:shadow-[0_10px_26px_-12px_rgba(79,107,255,0.5)] motion-reduce:transform-none";
 const tone = (v: number) => (v > 0 ? "text-emerald-600 dark:text-[#4ade80]" : v < 0 ? "text-red-600 dark:text-[#f87171]" : "");
 
 const ageDays = (iso: string | null) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : null);
@@ -50,6 +51,8 @@ export default function EaTrackerPage() {
   const [accDlg, setAccDlg] = useState<{ edit: EaAcc | null } | null>(null);
   const [editRate, setEditRate] = useState(false);
   const [rateInput, setRateInput] = useState("");
+  const [hov, setHov] = useState<number | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
 
   useEffect(() => { try { const v = localStorage.getItem(CUR_KEY); if (v === "usd" || v === "idr") setCur(v); } catch {} }, []);
   const chooseCur = (c: Cur) => { setCur(c); try { localStorage.setItem(CUR_KEY, c); } catch {} };
@@ -131,6 +134,11 @@ export default function EaTrackerPage() {
     setEditRate(false);
     await load();
   }
+  async function demo(on: boolean) {
+    if (!on && !window.confirm("Hapus semua akun dan data contoh? Data aslimu tidak ikut terhapus.")) return;
+    setDemoBusy(true);
+    try { await fetch("/api/ea/demo", { method: on ? "POST" : "DELETE" }); setAccId("all"); setMonth(null); setSelDate(null); await load(); } finally { setDemoBusy(false); }
+  }
   async function removeUpload(id: string, name: string) {
     if (!window.confirm(`Batalkan unggahan "${name}"? Trade dan arus dana dari unggahan ini akan dihapus.`)) return;
     await fetch(`/api/ea/upload?id=${id}`, { method: "DELETE" });
@@ -147,6 +155,7 @@ export default function EaTrackerPage() {
           <h2 className={H2}>Belum ada akun EA</h2>
           <p className="max-w-md text-sm text-muted-foreground dark:text-[#8a94c4]">Tambahkan akun MT5 yang menjalankan EA, lalu unggah file CSV riwayat deal seminggu sekali.</p>
           <button type="button" onClick={() => setAccDlg({ edit: null })} className={cn("inline-flex items-center gap-2 h-11 px-5 rounded-xl text-sm font-bold", BTN_PRIMARY)}><Plus className="w-4 h-4" />Tambah akun EA</button>
+          <button type="button" disabled={demoBusy} onClick={() => demo(true)} className="text-sm font-semibold text-[#3b57e8] dark:text-[#9db0ff] hover:underline disabled:opacity-50">{demoBusy ? "Membuat data contoh..." : "atau coba dengan data contoh"}</button>
         </div>
         {accDlg && <AccountDialog account={accDlg.edit} onClose={() => setAccDlg(null)} onSaved={afterSave} />}
       </div>
@@ -154,6 +163,7 @@ export default function EaTrackerPage() {
   }
 
   const hasData = F.out.length > 0;
+  const hasDemo = accounts.some((a) => a.name.startsWith("[Contoh]"));
   const pf = S.gl > 0 ? S.gw / S.gl : S.gw > 0 ? Infinity : 0;
   const winRate = S.trades ? Math.round((S.wins / S.trades) * 100) : 0;
   const balance = dep - wd + F.net;
@@ -216,6 +226,17 @@ export default function EaTrackerPage() {
   const eqLine = lp(eqVals);
   const eqArea = ref.length ? `${eqLine} L${W} ${H} L0 ${H} Z` : "";
   const gridY = [0, 1, 2, 3].map((k) => mn + ((mx - mn) * k) / 3);
+  const hovN = ref.length;
+  const hi = hov !== null && hov < hovN ? hov : null;
+  const hp = hi !== null ? ref[hi] : null;
+  const hFrac = hi !== null ? (hovN > 1 ? hi / (hovN - 1) : 0.5) : 0;
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!hovN) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    setHov(hovN > 1 ? Math.round(f * (hovN - 1)) : 0);
+  };
+  const tipPos: React.CSSProperties = hFrac > 0.55 ? { left: `${hFrac * 100}%`, transform: "translateX(calc(-100% - 14px))" } : { left: `calc(${hFrac * 100}% + 14px)` };
   const ddY = (v: number) => (S.minPct === 0 ? 4 : 4 + (v / S.minPct) * 76);
   const ddArea = ref.length ? `M0 4 ${ref.map((o, i) => `L${xOf(i, ref.length).toFixed(1)} ${ddY(o.pct).toFixed(1)}`).join(" ")} L${W} 4 Z` : "";
   const xl: { left: string; t: string }[] = [];
@@ -287,7 +308,8 @@ export default function EaTrackerPage() {
     const has = wCnt > 0;
     const good = calMode === "profit" && wSum >= 0;
     calCells.push(
-      <div key={`w${r}`} className={cn("min-h-[68px] flex flex-col justify-between rounded-xl border px-2.5 py-2",
+      <HoverTip key={`w${r}`} block className="h-full" side="top" align="right" title={`Minggu ${r + 1}`} rows={has ? [{ label: "Total profit", value: fmt.moneyS(wSum), tone: wSum >= 0 ? "win" : "loss" }, { label: "Hari trading", value: String(wCnt) }, { label: "Drawdown terdalam", value: S.noBase ? "—" : fmt.pct(wMin), tone: "loss" }] : [{ label: "Status", value: "belum ada data", tone: "muted" }]}>
+      <div className={cn("h-full min-h-[68px] flex flex-col justify-between rounded-xl border px-2.5 py-2",
         has ? (calMode === "profit" ? (good ? "bg-emerald-400/10 border-[#7a8cff]/35" : "bg-red-400/10 border-[#7a8cff]/35") : "bg-red-400/10 border-[#7a8cff]/35") : "bg-secondary/30 border-[#7a8cff]/20 dark:bg-white/[0.03]")}>
         <span className="text-[11px] font-bold text-[#3b57e8] dark:text-[#9db0ff]">Minggu {r + 1}</span>
         <span className={cn("font-mono text-xs font-bold tabular-nums", !has ? "text-muted-foreground" : calMode === "profit" ? (good ? "text-emerald-700 dark:text-[#c8fadb]" : "text-red-700 dark:text-[#fecaca]") : "text-red-700 dark:text-[#fecaca]")}>
@@ -295,6 +317,7 @@ export default function EaTrackerPage() {
         </span>
         <span className="text-[10.5px] text-muted-foreground dark:text-[#8a94c4]">{!has ? "belum ada data" : calMode === "profit" ? `${wCnt} hari trading` : "terdalam minggu ini"}</span>
       </div>
+      </HoverTip>
     );
   }
 
@@ -361,6 +384,13 @@ export default function EaTrackerPage() {
         {one && <button type="button" onClick={() => setAccDlg({ edit: one })} aria-label={`Ubah ${one.name}`} className="inline-flex items-center gap-2 min-h-[52px] px-4 rounded-[14px] border border-border dark:border-[#7a8cff]/20 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"><Pencil className="w-4 h-4" />Ubah</button>}
       </div>
 
+      {hasDemo && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#7a8cff]/30 bg-[#4f6bff]/10 px-4 py-3">
+          <p className="text-[13px] text-foreground/80 dark:text-[#c3cbf0]">Kamu sedang melihat <b>data contoh</b> (akun berawalan [Contoh]). Aman dihapus kapan saja, data asli tidak ikut terhapus.</p>
+          <button type="button" disabled={demoBusy} onClick={() => demo(false)} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl border border-red-400/40 text-xs font-bold text-red-600 dark:text-[#f87171] hover:bg-red-400/10 transition-colors disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" />{demoBusy ? "Menghapus..." : "Hapus data contoh"}</button>
+        </div>
+      )}
+
       {!hasData && (
         <div className={cn(PANEL, "p-8 flex flex-col items-center text-center gap-3")}>
           <h2 className={H2}>Belum ada trade untuk {one ? one.name : "akun ini"}</h2>
@@ -417,6 +447,25 @@ export default function EaTrackerPage() {
                   {accLines.map((s) => <path key={s.a.id} d={lp(s.v)} fill="none" stroke={s.a.color} strokeWidth="1.5" opacity="0.85" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />)}
                   <path d={eqLine} fill="none" stroke="#9db0ff" strokeWidth="2.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
+                <div className="absolute inset-0 cursor-crosshair" onMouseMove={onMove} onMouseLeave={() => setHov(null)} />
+                {hp && hi !== null && (
+                  <>
+                    <div className="pointer-events-none absolute top-0 bottom-0 w-px bg-[#9db0ff]/50" style={{ left: `${hFrac * 100}%` }} />
+                    {accLines.map((l) => <span key={l.a.id} className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[#0c1330]" style={{ left: `${hFrac * 100}%`, top: yOf(l.v[hi]), background: l.a.color }} />)}
+                    <span className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#9db0ff] ring-2 ring-[#0c1330] shadow-[0_0_12px_rgba(157,176,255,0.8)]" style={{ left: `${hFrac * 100}%`, top: yOf(hp.cum) }} />
+                    <div className="pointer-events-none absolute top-0 z-40 w-max min-w-[170px] max-w-[260px] rounded-xl border border-[#7a8cff]/25 bg-[#0c1330]/95 px-3.5 py-3 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur" style={tipPos}>
+                      <p className="mb-1.5 text-xs font-bold text-white">{dayLabelLong(hp.d)}</p>
+                      <div className="flex flex-col gap-1 text-[11.5px]">
+                        <div className="flex justify-between gap-4"><span className="text-[#8a94c4]">Profit hari itu</span><b className={cn("font-mono tabular-nums", hp.p >= 0 ? "text-[#4ade80]" : "text-[#f87171]")}>{fmt.moneyS(hp.p)}</b></div>
+                        <div className="flex justify-between gap-4"><span className="text-[#8a94c4]">{accId === "all" ? "Total kumulatif" : "Kumulatif"}</span><b className="font-mono tabular-nums text-[#e8ecff]">{fmt.moneyS(hp.cum)}</b></div>
+                        <div className="flex justify-between gap-4"><span className="text-[#8a94c4]">Drawdown</span><b className="font-mono tabular-nums text-[#f87171]">{S.noBase ? "—" : fmt.pct(hp.pct)}</b></div>
+                        {accLines.length > 0 && <div className="mt-1 flex flex-col gap-1 border-t border-[#7a8cff]/15 pt-1.5">
+                          {accLines.map((l) => <div key={l.a.id} className="flex items-center justify-between gap-4"><span className="flex items-center gap-1.5 text-[#8a94c4]"><i className="inline-block h-2 w-2 rounded-full" style={{ background: l.a.color }} />{l.a.name.replace("[Contoh] ", "")}</span><b className="font-mono tabular-nums text-[#e8ecff]">{fmt.moneyS(l.v[hi])}</b></div>)}
+                        </div>}
+                      </div>
+                    </div>
+                  </>
+                )}
                 {gridY.map((v, i) => <span key={i} className="absolute -left-14 font-mono text-[11px] tabular-nums text-muted-foreground dark:text-[#8a94c4] -translate-y-1/2" style={{ top: yOf(v) }}>{fmt.compact(v)}</span>)}
               </div>
               <div className="flex flex-col gap-1.5">
@@ -427,6 +476,20 @@ export default function EaTrackerPage() {
                     <line x1="0" x2={W} y1="4" y2="4" stroke="rgba(165,180,255,0.35)" vectorEffect="non-scaling-stroke" />
                     <path d={ddArea} fill="url(#ddg)" stroke="#f87171" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
                   </svg>
+                  <div className="absolute inset-0 cursor-crosshair" onMouseMove={onMove} onMouseLeave={() => setHov(null)} />
+                  {hp && (
+                    <>
+                      <div className="pointer-events-none absolute top-0 bottom-0 w-px bg-[#f87171]/50" style={{ left: `${hFrac * 100}%` }} />
+                      <span className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f87171] ring-2 ring-[#0c1330]" style={{ left: `${hFrac * 100}%`, top: ddY(hp.pct) }} />
+                      <div className="pointer-events-none absolute top-0 z-40 w-max min-w-[150px] rounded-xl border border-[#7a8cff]/25 bg-[#0c1330]/95 px-3.5 py-3 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur" style={tipPos}>
+                        <p className="mb-1.5 text-xs font-bold text-white">{dayLabelLong(hp.d)}</p>
+                        <div className="flex flex-col gap-1 text-[11.5px]">
+                          <div className="flex justify-between gap-4"><span className="text-[#8a94c4]">Drawdown</span><b className="font-mono tabular-nums text-[#f87171]">{S.noBase ? "—" : fmt.pct(hp.pct)}</b></div>
+                          <div className="flex justify-between gap-4"><span className="text-[#8a94c4]">Nominal</span><b className="font-mono tabular-nums text-[#e8ecff]">{fmt.money(hp.dd)}</b></div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <span className="absolute -left-14 top-1 -translate-y-1/2 font-mono text-[11px] text-muted-foreground dark:text-[#8a94c4]">0%</span>
                   <span className="absolute -left-14 font-mono text-[11px] text-red-600 dark:text-[#f87171] -translate-y-1/2" style={{ top: 80 }}>{S.noBase ? "—" : fmt.pct(S.minPct)}</span>
                 </div>
@@ -439,8 +502,12 @@ export default function EaTrackerPage() {
             <div className={cn(PANEL, "flex-[1_1_340px] min-w-0 p-[22px] flex flex-col gap-4")}>
               <div><h2 className={H2}>Modal &amp; Arus Dana</h2><p className={cn(CAP, "mt-1")}>{one ? one.name : `Semua ${accounts.length} akun`}</p></div>
               <div className="grid grid-cols-2 gap-3">
-                <div className={INNER}><span className={LABEL}>Total Deposit</span><div className="mt-1 font-mono text-base font-bold tabular-nums text-[#3b57e8] dark:text-[#9db0ff]">{fmt.money(dep)}</div></div>
-                <div className={INNER}><span className={LABEL}>Total Withdraw</span><div className="mt-1 font-mono text-base font-bold tabular-nums text-amber-600 dark:text-[#facc15]">{fmt.money(wd)}</div></div>
+                <HoverTip block className="h-full" side="bottom" align="left" title="Total Deposit" rows={[...scope.map((a) => ({ label: a.name.replace("[Contoh] ", ""), value: fmt.money(per[a.id].dep) })), { label: "Total", value: fmt.money(dep) }]} note="Dana yang dimasukkan ke akun EA, terbaca dari baris balance di file.">
+                  <div className={cn(INNER, "h-full", TILE)}><span className={LABEL}>Total Deposit</span><div className="mt-1 font-mono text-base font-bold tabular-nums text-[#3b57e8] dark:text-[#9db0ff]">{fmt.money(dep)}</div></div>
+                </HoverTip>
+                <HoverTip block className="h-full" side="bottom" align="right" title="Total Withdraw" rows={[...scope.map((a) => ({ label: a.name.replace("[Contoh] ", ""), value: fmt.money(per[a.id].wd) })), { label: "Total", value: fmt.money(wd) }]} note="Dana yang ditarik dari akun EA.">
+                  <div className={cn(INNER, "h-full", TILE)}><span className={LABEL}>Total Withdraw</span><div className="mt-1 font-mono text-base font-bold tabular-nums text-amber-600 dark:text-[#facc15]">{fmt.money(wd)}</div></div>
+                </HoverTip>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex h-2 gap-[3px] overflow-hidden rounded-full">
@@ -503,8 +570,12 @@ export default function EaTrackerPage() {
                     <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-bold", selRec.p >= 0 ? "bg-emerald-400/15 text-emerald-700 dark:text-[#4ade80]" : "bg-red-400/15 text-red-700 dark:text-[#f87171]")}>{selRec.p >= 0 ? "Hari profit" : "Hari rugi"}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className={INNER}><span className={LABEL}>Profit</span><div className={cn("mt-1 font-mono text-base font-bold tabular-nums", tone(selRec.p))}>{fmt.moneyS(selRec.p)}</div></div>
-                    <div className={INNER}><span className={LABEL}>Drawdown</span><div className="mt-1 font-mono text-base font-bold tabular-nums text-red-600 dark:text-[#f87171]">{S.noBase ? "—" : fmt.pct(selRec.pct)}</div></div>
+                    <HoverTip block className="h-full" side="top" align="left" title="Profit hari ini" rows={[{ label: "Profit", value: fmt.moneyS(selRec.p), tone: selRec.p >= 0 ? "win" : "loss" }, { label: "Jumlah trade", value: String(dayN[selD] ?? 0) }, { label: "Kumulatif", value: fmt.moneyS(selRec.cum) }]}>
+                      <div className={cn(INNER, "h-full", TILE)}><span className={LABEL}>Profit</span><div className={cn("mt-1 font-mono text-base font-bold tabular-nums", tone(selRec.p))}>{fmt.moneyS(selRec.p)}</div></div>
+                    </HoverTip>
+                    <HoverTip block className="h-full" side="top" align="right" title="Drawdown hari ini" rows={[{ label: "Persentase", value: S.noBase ? "—" : fmt.pct(selRec.pct), tone: "loss" }, { label: "Nominal", value: fmt.money(selRec.dd), tone: "loss" }]} note="Kedalaman dari puncak kurva profit di akhir hari.">
+                      <div className={cn(INNER, "h-full", TILE)}><span className={LABEL}>Drawdown</span><div className="mt-1 font-mono text-base font-bold tabular-nums text-red-600 dark:text-[#f87171]">{S.noBase ? "—" : fmt.pct(selRec.pct)}</div></div>
+                    </HoverTip>
                   </div>
                   <div className="flex flex-col">
                     <span className={cn(LABEL, "mb-1.5")}>{one ? "Akun" : "Per akun"}</span>
@@ -559,14 +630,16 @@ export default function EaTrackerPage() {
               <div><h2 className={H2}>Detail EA</h2><p className={cn(CAP, "mt-1")}>{one.name} · kontribusi {allNet > 0 ? Math.max(0, Math.round((per[one.id].F.net / allNet) * 100)) : 0}% dari total profit semua akun</p></div>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
                 {[
-                  { k: "Simbol", v: one.symbol ?? "—" }, { k: "Magic number", v: one.magic ?? "—" }, { k: "Nomor akun MT5", v: one.login ?? "—" },
-                  { k: "Mata uang akun", v: one.unit === "USC" ? "USC (cent, 100 USC = $1)" : "USD" },
-                  { k: "Saldo di MT5", v: one.unit === "USC" ? `${makeFmt("usd", 1).grp(balance * 100, 0)} USC` : `$${makeFmt("usd", 1).grp(balance, 2)} USD` },
-                  { k: "Total trade", v: String(per[one.id].F.trades) }, { k: "Win rate", v: `${per[one.id].F.trades ? Math.round((per[one.id].F.wins / per[one.id].F.trades) * 100) : 0}%` },
-                  { k: "Profit factor", v: per[one.id].F.gl > 0 ? (per[one.id].F.gw / per[one.id].F.gl).toFixed(2).replace(".", ",") : "—" },
-                  { k: "Update terakhir", v: statusOf(one).short },
+                  { k: "Simbol", v: one.symbol ?? "—", n: "Instrumen yang diperdagangkan EA." }, { k: "Magic number", v: one.magic ?? "—", n: "ID unik EA di MT5." }, { k: "Nomor akun MT5", v: one.login ?? "—", n: "Dipakai untuk mengenali akun saat unggah." },
+                  { k: "Mata uang akun", v: one.unit === "USC" ? "USC (cent, 100 USC = $1)" : "USD", n: "Analitik selalu ditampilkan dalam USD." },
+                  { k: "Saldo di MT5", v: one.unit === "USC" ? `${makeFmt("usd", 1).grp(balance * 100, 0)} USC` : `$${makeFmt("usd", 1).grp(balance, 2)} USD`, n: "Perkiraan: deposit − withdraw + profit." },
+                  { k: "Total trade", v: String(per[one.id].F.trades), n: "Seluruh trade yang sudah ditutup." }, { k: "Win rate", v: `${per[one.id].F.trades ? Math.round((per[one.id].F.wins / per[one.id].F.trades) * 100) : 0}%`, n: "Persentase trade yang untung." },
+                  { k: "Profit factor", v: per[one.id].F.gl > 0 ? (per[one.id].F.gw / per[one.id].F.gl).toFixed(2).replace(".", ",") : "—", n: "Gross profit dibagi gross loss." },
+                  { k: "Update terakhir", v: statusOf(one).short, n: "Kapan data terakhir diunggah." },
                 ].map((x) => (
-                  <div key={x.k} className={INNER}><span className={LABEL}>{x.k}</span><div className="mt-1 font-mono text-[15px] font-semibold tabular-nums">{x.v}</div></div>
+                  <HoverTip key={x.k} block className="h-full" side="top" title={x.k} rows={[{ label: "Nilai", value: x.v }]} note={x.n}>
+                    <div className={cn(INNER, "h-full", TILE)}><span className={LABEL}>{x.k}</span><div className="mt-1 font-mono text-[15px] font-semibold tabular-nums">{x.v}</div></div>
+                  </HoverTip>
                 ))}
               </div>
             </div>

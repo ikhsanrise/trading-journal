@@ -1,7 +1,10 @@
 "use client";
 // src/components/trades/ImportModal.tsx
 import { useEffect, useState, useRef } from "react";
-import { X, Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Info, Loader2 } from "lucide-react";
+import { Modal, FIELD, FIELD_LABEL } from "@/components/ea/Modal";
+import { BTN_PRIMARY } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 
 interface Props {
   onClose: () => void;
@@ -126,10 +129,15 @@ function parseReport(text: string, accountId: string) {
   return { trades, transactions };
 }
 
+const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const fmtSize = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
 export default function ImportModal({ onClose, onImported }: Props) {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountId, setAccountId] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{ trades: number; tx: number; from: string | null; to: string | null; pnl: number } | null>(null);
+  const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -143,6 +151,22 @@ export default function ImportModal({ onClose, onImported }: Props) {
         if (d.account) setAccountId(d.account.id);
       });
   }, []);
+
+  async function pick(f: File | null) {
+    setFile(f);
+    setResult(null);
+    setPreview(null);
+    if (!f) return;
+    try {
+      const { trades, transactions } = parseReport(await f.text(), "");
+      const times = trades.map((t) => t.entryDate as string).sort();
+      setPreview({
+        trades: trades.length, tx: transactions.length,
+        from: times[0] ?? null, to: times[times.length - 1] ?? null,
+        pnl: trades.reduce((a, t) => a + (t.pnl ?? 0), 0),
+      });
+    } catch { setPreview({ trades: 0, tx: 0, from: null, to: null, pnl: 0 }); }
+  }
 
   async function handleImport() {
     if (!file || !accountId) return;
@@ -202,124 +226,114 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
   const ok =
     result && (result.imported > 0 || result.skipped > 0 || (result.tx && (result.tx.imported > 0 || result.tx.skipped > 0)));
+  const empty = preview && preview.trades === 0 && preview.tx === 0;
+  const done = !!result && ok;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-    >
-      <div
-        className="bg-card border rounded-xl w-full max-w-md shadow-xl anim-pop"
-        style={{ backgroundColor: "hsl(var(--card))" }}
-      >
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-sm font-medium">Import from CSV</h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-muted">
-            <X className="w-4 h-4" />
-          </button>
+    <Modal title="Import CSV" subtitle="Unggah riwayat dari MT4/MT5. Trade yang sudah pernah masuk otomatis dilewati, jadi aman diimpor ulang." onClose={onClose}>
+      <div className="flex flex-col gap-5">
+        <div className="flex gap-3 rounded-2xl border border-[#7a8cff]/20 bg-[#4f6bff]/[0.08] p-3.5">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#3b57e8] dark:text-[#9db0ff]" />
+          <p className="text-[12.5px] leading-relaxed text-muted-foreground dark:text-[#c3cbf0]">
+            Di MT4/MT5 buka <b className="text-foreground">Account History</b>, klik kanan, pilih <b className="text-foreground">Save as Detailed Report</b>, lalu format <b className="text-foreground">CSV</b>. Deposit dan withdraw ikut terbaca.
+          </p>
         </div>
 
-        <div className="p-4 space-y-4">
-          <div className="bg-muted rounded-lg p-3">
-            <p className="text-xs font-medium mb-1">Supported Format</p>
-            <p className="text-[11px] text-muted-foreground">
-              MT4/MT5 History Export (CSV). Buka MT4/MT5 → Account History → klik kanan → Save as Detailed Report → pilih format CSV.
-            </p>
-          </div>
+        <div className="flex flex-col gap-2">
+          <label className={FIELD_LABEL} htmlFor="imp-acc">Akun tujuan</label>
+          <select id="imp-acc" className={cn(FIELD, "appearance-none")} value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={loading}>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
 
-          <div>
-            <label className="block text-[11px] text-muted-foreground mb-1">Target Account</label>
-            <select
-              className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-background focus:outline-none"
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-            >
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col gap-2">
+          <span className={FIELD_LABEL}>File CSV</span>
+          <button
+            type="button" disabled={loading}
+            onClick={() => fileRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) pick(f); }}
+            className={cn("flex min-h-[132px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center transition-all duration-200",
+              drag ? "border-[#9db0ff] bg-[#4f6bff]/20 scale-[1.01]" : file ? "border-emerald-400/40 bg-emerald-400/[0.07]" : "border-[#7a8cff]/40 bg-secondary/30 dark:bg-white/[0.03] hover:border-[#9db0ff] hover:bg-[#4f6bff]/10")}>
+            {file ? (
+              <>
+                <FileText className="h-6 w-6 text-emerald-600 dark:text-[#4ade80]" />
+                <span className="max-w-full truncate font-mono text-[13px] font-semibold">{file.name}</span>
+                <span className="text-xs text-muted-foreground dark:text-[#8a94c4]">{fmtSize(file.size)} · klik untuk ganti file</span>
+              </>
+            ) : (
+              <>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#4f6bff]/15 text-[#3b57e8] dark:text-[#9db0ff]"><Upload className="h-5 w-5" /></span>
+                <span className="text-sm font-bold">Klik atau seret file CSV ke sini</span>
+                <span className="text-xs text-muted-foreground dark:text-[#8a94c4]">Hanya file .csv dari MT4/MT5</span>
+              </>
+            )}
+          </button>
+          <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { pick(e.target.files?.[0] ?? null); e.target.value = ""; }} />
+        </div>
 
-          <div>
-            <label className="block text-[11px] text-muted-foreground mb-1">File CSV</label>
-            <div
-              onClick={() => fileRef.current?.click()}
-              className="border border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted transition-colors"
-            >
-              {file ? (
-                <div className="flex items-center justify-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-700" />
-                  <span className="text-xs text-blue-700">{file.name}</span>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
-                  <p className="text-xs text-muted-foreground">Click or drag CSV file here</p>
-                </>
-              )}
+        {preview && !result && !loading && (
+          empty ? (
+            <div className="flex gap-3 rounded-2xl border border-red-400/30 bg-red-400/10 p-3.5 text-[12.5px] text-red-700 dark:text-[#fca5a5]">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Tidak ada trade atau deposit yang terbaca. Pastikan file adalah Detailed Report MT4/MT5 dalam format CSV.</p>
             </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={(e) => { setFile(e.target.files?.[0] ?? null); setResult(null); }}
-            />
+          ) : (
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#7a8cff]/20 bg-secondary/30 p-4 dark:bg-white/[0.04]">
+              <span className="flex items-center gap-2 text-[13px] font-bold text-emerald-600 dark:text-[#4ade80]"><CheckCircle2 className="h-4 w-4" />File terbaca dengan baik</span>
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { k: "Trade", v: String(preview.trades) },
+                  { k: "Deposit/WD", v: String(preview.tx) },
+                  { k: "Total P&L", v: `${preview.pnl >= 0 ? "+" : "-"}${Math.abs(preview.pnl).toLocaleString("id-ID", { maximumFractionDigits: 2 })}`, c: preview.pnl >= 0 ? "text-emerald-600 dark:text-[#4ade80]" : "text-red-600 dark:text-[#f87171]" },
+                ].map((x) => (
+                  <div key={x.k} className="rounded-xl bg-secondary/50 p-3 dark:bg-white/[0.04]">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground dark:text-[#8a94c4]">{x.k}</span>
+                    <div className={cn("mt-1 font-mono text-base font-bold tabular-nums", x.c)}>{x.v}</div>
+                  </div>
+                ))}
+              </div>
+              {preview.from && <p className="text-xs text-muted-foreground dark:text-[#8a94c4]">Periode {fmtDay(preview.from)} – {fmtDay(preview.to!)}</p>}
+            </div>
+          )
+        )}
+
+        {loading && (
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between text-xs font-semibold text-muted-foreground dark:text-[#c3cbf0]">
+              <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" />Mengimpor...</span>
+              <span className="font-mono">{progress.current}/{progress.total}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-secondary dark:bg-white/[0.07]">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#4f6bff] to-[#8ea2ff] transition-all duration-300" style={{ width: `${progress.total ? (progress.current / progress.total) * 100 : 5}%` }} />
+            </div>
           </div>
+        )}
 
-          {loading && progress.total > 0 && (
-            <div className="space-y-1">
-              <div className="flex justify-between text-[10px] text-muted-foreground">
-                <span>Importing...</span>
-                <span>{progress.current}/{progress.total}</span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                />
-              </div>
+        {result && (
+          <div className={cn("flex items-start gap-3 rounded-2xl border p-4 anim-fade", ok ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-700 dark:text-[#4ade80]" : "border-red-400/30 bg-red-400/10 text-red-700 dark:text-[#fca5a5]")}>
+            {ok ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /> : <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />}
+            <div className="flex flex-col gap-1 text-[13px]">
+              {result.imported > 0 && <p className="font-bold">{result.imported} trade berhasil diimpor</p>}
+              {result.skipped > 0 && <p>{result.skipped} trade sudah ada, dilewati</p>}
+              {result.tx && <p>Deposit/withdraw: {result.tx.imported} baru, {result.tx.skipped} sudah ada</p>}
+              {!ok && <p className="font-bold">Tidak ada trade baru ditemukan</p>}
+              {result.failed > 0 && <p>{result.failed} trade gagal diimpor</p>}
             </div>
-          )}
+          </div>
+        )}
 
-          {result && (
-            <div
-              className={`rounded-lg p-3 flex items-start gap-2 anim-fade ${
-                ok ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400"
-              }`}
-            >
-              {ok ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />}
-              <div className="space-y-0.5">
-                {result.imported > 0 && <p className="text-xs font-medium">{result.imported} trades imported.</p>}
-                {result.skipped > 0 && <p className="text-xs">{result.skipped} trades already existed (skipped).</p>}
-                {result.tx && (
-                  <p className="text-xs">
-                    Deposit/withdraw: {result.tx.imported} new, {result.tx.skipped} already existed.
-                  </p>
-                )}
-                {!ok && <p className="text-xs font-medium">No new trades found.</p>}
-                {result.failed > 0 && <p className="text-xs">{result.failed} trades failed to import.</p>}
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={onClose}
-              className="flex-1 text-xs py-2 rounded-lg border text-muted-foreground hover:bg-muted transition-colors"
-            >
-              Cancel
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="h-11 rounded-xl border border-border px-5 text-sm font-bold transition-colors hover:bg-secondary/60 dark:border-[#7a8cff]/30 dark:bg-white/[0.04]">{done ? "Tutup" : "Batal"}</button>
+          {!done && (
+            <button type="button" onClick={handleImport} disabled={!file || !accountId || loading || !!empty}
+              className={cn("inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50", BTN_PRIMARY)}>
+              {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Mengimpor...</> : preview && !empty ? `Impor ${preview.trades} trade` : "Impor"}
             </button>
-            <button
-              onClick={handleImport}
-              disabled={!file || !accountId || loading}
-              className="flex-1 text-xs py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-colors disabled:opacity-60 font-medium"
-            >
-              {loading ? "Importing..." : "Import"}
-            </button>
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
